@@ -24,7 +24,7 @@ Helpful reports include:
 
 ## Project Security Posture
 
-- This repository appears to be a node.js or javascript project. The active security scope is the code and documentation on the default branch.
+- This repository appears to be a Node.js or JavaScript project. The active security scope is the code and documentation on the default branch.
 - Review found authentication, token, or session-related code paths; changes in those areas should receive security-focused review before merge.
 - Review found network clients, sockets, web APIs, or service endpoints; changes in those areas should receive security-focused review before merge.
 - Review found mobile permission or privacy-sensitive data handling; changes in those areas should receive security-focused review before merge.
