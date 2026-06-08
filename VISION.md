@@ -1,5 +1,8 @@
 ## Alexa Hello World Vision
 
+This document explains the current state and direction of the project.
+Project overview and developer docs: [`README.md`](README.md)
+
 Alexa Hello World is a minimal AWS Lambda sample for an Alexa skill. It shows
 how to receive an Alexa request and return a simple "Hello World" response.
 
