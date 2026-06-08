@@ -44,7 +44,7 @@ AWS credentials, Lambda deployment secrets, and skill identifiers that are not
 meant to be public should remain in the AWS console, environment variables, or
 local deployment tooling rather than this repository.
 
-## What We Will Not Merge For Now
+## What We Will Not Merge (For Now)
 
 - Framework-heavy rewrites that obscure the basic Lambda handler flow
 - Production deployment automation that requires committing credentials
