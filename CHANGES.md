@@ -11,3 +11,5 @@
 4. Preserved the existing Alexa request behavior and handler tests.
 5. Added an explicit unsupported request-type contract so dispatcher failures
    are clear.
+6. Added built-in cancel and stop intent handling so users can exit the sample
+   cleanly.

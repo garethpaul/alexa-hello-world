@@ -61,6 +61,8 @@ Detected npm scripts:
 ## Testing and Verification
 
 - `npm test`
+- Handler tests cover launch, hello, help, cancel, stop, unsupported-intent,
+  unsupported-request, and configured application-id rejection flows.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 

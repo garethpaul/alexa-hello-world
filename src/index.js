@@ -79,6 +79,12 @@ HelloWorld.prototype.intentHandlers = {
   },
   'AMAZON.HelpIntent': function (intent, session, response) {
     response.ask('You can say hello to me!', 'You can say hello to me!');
+  },
+  'AMAZON.CancelIntent': function (intent, session, response) {
+    response.tell('Goodbye!');
+  },
+  'AMAZON.StopIntent': function (intent, session, response) {
+    response.tell('Goodbye!');
   }
 };
 

@@ -86,6 +86,19 @@ test('help intent returns help prompt and keeps the session open', async () => {
   assert.equal(result.response.response.shouldEndSession, false);
 });
 
+for (const intentName of ['AMAZON.CancelIntent', 'AMAZON.StopIntent']) {
+  test(`${intentName} returns goodbye and ends the session`, async () => {
+    const result = await invoke({
+      type: 'IntentRequest',
+      intent: { name: intentName }
+    });
+
+    assert.equal(result.type, 'succeed');
+    assert.equal(result.response.response.outputSpeech.text, 'Goodbye!');
+    assert.equal(result.response.response.shouldEndSession, true);
+  });
+}
+
 test('unsupported intents fail the lambda invocation', async () => {
   const result = await invoke({
     type: 'IntentRequest',
