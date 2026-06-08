@@ -1,76 +1,89 @@
-# Sample AWS Lambda function for Alexa
+# alexa-hello-world
 
-<!-- README-OVERVIEW-IMAGE -->
-![Project overview](docs/readme-overview.svg)
+## Overview
 
-A simple [AWS Lambda](http://aws.amazon.com/lambda) function that demonstrates how to write a skill for the Amazon Echo using the Alexa SDK.
+`garethpaul/alexa-hello-world` is a Node.js or JavaScript project. A very basic hello-world sample alexa app.
 
-## Concepts
+This README is based on the checked-in source, manifests, scripts, and repository metadata on the `master` branch. The project language mix found during review was: JavaScript (4).
 
-This simple sample has no external dependencies or session management, and shows the most basic example of how to create a Lambda function for handling Alexa Skill requests.
+## Repository Contents
 
-## Local Verification
+- `README.md` - project overview and local usage notes
+- `package.json` - JavaScript dependency and script metadata
+- `.circleci` - source or example code
+- `docs` - source or example code
+- `package-lock.json` - JavaScript dependency and script metadata
+- `SECURITY.md` - security reporting and disclosure guidance
+- `speechAssets` - source or example code
+- `src` - source or example code
+- `test` - source or example code
+- `VISION.md` - project direction and maintenance guardrails
 
-Run the Lambda response tests before packaging changes:
+Additional scan context:
 
-```sh
-npm run lint
-npm run format:check
-npm test
-npm run build
+- Source directories: .circleci, docs, speechAssets, src, test
+- Dependency and build manifests: package-lock.json, package.json
+- Entry points or build surfaces: package.json
+- Test-looking files: docs/plans/2026-06-08-alexa-testability-baseline.md, test/handler.test.js
+
+## Getting Started
+
+### Prerequisites
+
+- Git
+- Node.js and npm
+
+### Setup
+
+```bash
+git clone https://github.com/garethpaul/alexa-hello-world.git
+cd alexa-hello-world
+npm install
 ```
 
-Use Node.js 20.19 or newer for local development tooling.
+The setup commands above are derived from repository files. Legacy mobile, Python, or JavaScript samples may require older SDKs or package versions than a modern workstation uses by default.
 
-The Lambda runtime code has no third-party npm dependencies. Development
-dependencies are used only for lint and format checks.
+## Running or Using the Project
 
-## Configuration
+- Inspect `package.json` for available npm scripts before running the project.
 
-Set `ALEXA_SKILL_ID` when you want the Lambda to reject requests from any other
-Alexa skill application id:
+Detected npm scripts:
 
-```sh
-export ALEXA_SKILL_ID='amzn1.echo-sdk-ams.app.your-skill-id'
-```
+- `npm run build` - `node --check src/AlexaSkill.js && node --check src/index.js`
+- `npm run format:check` - `prettier --check .`
+- `npm run lint` - `eslint .`
+- `npm run test` - `node --test`
 
-Leaving `ALEXA_SKILL_ID` unset preserves the sample behavior and skips app-id
-validation.
+## Testing and Verification
 
-## Setup
+- `npm test`
 
-To run this example skill you need to do two things. The first is to deploy the example code in lambda, and the second is to configure the Alexa skill to use Lambda.
+When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
-### AWS Lambda Setup
+## Configuration and Secrets
 
-1. Go to the AWS Console and click on the Lambda link. Note: ensure you are in us-east or you won't be able to use Alexa with Lambda.
-2. Click on the Create a Lambda Function or Get Started Now button.
-3. Skip the blueprint
-4. Name the Lambda Function "Hello-World-Example-Skill".
-5. Select the runtime as Node.js
-6. Go to the the src directory, select all files and then create a zip file, make sure the zip file does not contain the src directory itself, otherwise Lambda function will not work.
-7. Select Code entry type as "Upload a .ZIP file" and then upload the .zip file to the Lambda
-8. Keep the Handler as index.handler (this refers to the main js file in the zip).
-9. Create a basic execution role and click create.
-10. Leave the Advanced settings as the defaults.
-11. Click "Next" and review the settings then click "Create Function"
-12. Click the "Event Sources" tab and select "Add event source"
-13. Set the Event Source type as Alexa Skills kit and Enable it now. Click Submit.
-14. Copy the ARN from the top right to be used later in the Alexa Skill Setup
+- No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
 
-### Alexa Skill Setup
+## Security and Privacy Notes
 
-1. Go to the [Alexa Console](https://developer.amazon.com/edw/home.html) and click Add a New Skill.
-2. Set "HelloWorld" as the skill name and "hello world" as the invocation name, this is what is used to activate your skill. For example you would say: "Alexa, tell Hello World to say hello"
-3. Select the Lambda ARN for the skill Endpoint and paste the ARN copied from above. Click Next.
-4. Copy the Intent Schema from the included IntentSchema.json.
-5. Copy the Sample Utterances from the included SampleUtterances.txt. Click Next.
-6. [optional] go back to the skill Information tab and copy the appId. Configure it as `ALEXA_SKILL_ID` for the Lambda environment, then update the lambda source zip file and upload to lambda again. This step makes sure the lambda function only serves requests from the authorized source.
-7. You are now able to start testing your sample skill! You should be able to go to the [Echo webpage](http://echo.amazon.com/#skills) and see your skill enabled.
-8. In order to test it, try to say some of the Sample Utterances from the Examples section below.
-9. Your skill is now saved and once you are finished testing you can continue to publish your skill.
+- Review changes touching authentication or token handling; examples from the scan include docs/plans/2026-06-08-alexa-testability-baseline.md, src/AlexaSkill.js, src/index.js, test/handler.test.js.
+- Review changes touching network requests, sockets, or service endpoints; examples from the scan include src/index.js.
+- Review changes touching file, media, JSON, XML, CSV, OCR, or data parsing; examples from the scan include .circleci/config.yml, docs/plans/2026-06-08-alexa-testability-baseline.md.
+- Review changes touching database, model, or persistence code; examples from the scan include docs/plans/2026-06-08-alexa-testability-baseline.md, src/index.js.
+- Review changes touching infrastructure, proxy, cloud, or deployment configuration; examples from the scan include .circleci/config.yml, docs/plans/2026-06-08-alexa-testability-baseline.md.
 
-## Examples
+## Maintenance Notes
 
-    User: "Alexa, tell Hello World to say hello"
-    Alexa: "Hello World!"
+- See `SECURITY.md` for vulnerability reporting and safe research guidance.
+- See `VISION.md` for project direction and contribution guardrails.
+
+## Contributing
+
+Keep changes small and tied to the project that is already present in this repository. For code changes, document the toolchain used, avoid committing generated dependency directories or local configuration, and update this README when setup or verification steps change.
+
+## Existing Project Notes
+
+Prior README summary:
+
+> Sample AWS Lambda function for Alexa <!-- README-OVERVIEW-IMAGE --> A simple [AWS Lambda](http://aws.amazon.com/lambda) function that demonstrates how to write a skill for the Amazon Echo using the Alexa SDK. Concepts This simple sample has no external dependencies or session management, and shows the most basic example of how to create a Lambda function for handling Alexa Skill requests. Local Verification Run the Lambda response tests before packaging changes:
+
