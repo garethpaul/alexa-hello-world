@@ -1,0 +1,11 @@
+# Changes
+
+## 2026-06-08
+
+1. Added explicit lint, format-check, test, and build scripts so local
+   verification has the full quality gate required before changes are pushed.
+2. Added pinned, supported development dependencies for ESLint and Prettier
+   while keeping the Lambda runtime dependency-free.
+3. Added CircleCI to run install, lint, format check, tests, and syntax build on
+   every pushed commit.
+4. Preserved the existing Alexa request behavior and handler tests.

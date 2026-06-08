@@ -26,6 +26,7 @@ The repository contains a Lambda handler and Alexa speech assets, but no package
 - R3. The optional Alexa application id must be configurable without editing source before deployment.
 - R4. Documentation must explain local verification and Lambda packaging expectations.
 - R5. Existing speech output, card output, and session-ending behavior must remain unchanged.
+- R6. CI must run lint, format check, tests, and build syntax checks.
 
 ---
 
@@ -35,6 +36,8 @@ The repository contains a Lambda handler and Alexa speech assets, but no package
 - **Test through the Lambda handler:** Calling `exports.handler` exercises the sample's request routing and response builder without exposing internals just for tests.
 - **Read app id from the environment:** `process.env.ALEXA_SKILL_ID` preserves the optional validation behavior while avoiding source edits for deployment-specific ids.
 - **Keep package metadata private:** This is deployable source, not a published npm package.
+- **Keep runtime dependency-free:** ESLint and Prettier are supported, pinned development-only checks and should not be required by Lambda at runtime.
+- **Use the current Node tooling floor:** ESLint 10's dependency tree requires Node 20.19 or newer, so local verification and CI use Node 20.19.
 
 ---
 

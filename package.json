@@ -4,9 +4,17 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "test": "node --test"
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "test": "node --test",
+    "build": "node --check src/AlexaSkill.js && node --check src/index.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.19"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.4.1",
+    "prettier": "3.8.3"
   }
 }
