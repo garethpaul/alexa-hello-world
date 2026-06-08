@@ -83,9 +83,3 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Contributing
 
 Keep changes small and tied to the project that is already present in this repository. For code changes, document the toolchain used, avoid committing generated dependency directories or local configuration, and update this README when setup or verification steps change.
-
-## Existing Project Notes
-
-Prior README summary:
-
-> Sample AWS Lambda function for Alexa A simple [AWS Lambda](http://aws.amazon.com/lambda) function that demonstrates how to write a skill for the Amazon Echo using the Alexa SDK. Concepts This simple sample has no external dependencies or session management, and shows the most basic example of how to create a Lambda function for handling Alexa Skill requests. Local Verification Run the Lambda response tests before packaging changes:
