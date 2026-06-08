@@ -36,6 +36,11 @@ Contribution rules:
 
 ## Security
 
+Canonical security policy and reporting:
+
+- [`SECURITY.md`](SECURITY.md)
+
+
 The Lambda can optionally reject requests from unexpected Alexa skill
 application IDs. Deployments should set `ALEXA_SKILL_ID` when they are intended
 to serve only one skill.
