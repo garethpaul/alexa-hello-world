@@ -50,3 +50,6 @@ local deployment tooling rather than this repository.
 - Production deployment automation that requires committing credentials
 - New intents without local tests and README examples
 - Runtime changes that make the sample harder to run locally
+
+This list is a roadmap guardrail, not a permanent rule.
+Strong user demand and strong technical rationale can change it.
