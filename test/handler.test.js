@@ -96,6 +96,16 @@ test('unsupported intents fail the lambda invocation', async () => {
   assert.equal(result.error, 'Unsupported intent = UnknownIntent');
 });
 
+test('unsupported request types fail with a clear message', async () => {
+  const result = await invoke({ type: 'AudioPlayer.PlaybackStarted' });
+
+  assert.equal(result.type, 'fail');
+  assert.equal(
+    result.error,
+    'Unsupported request type = AudioPlayer.PlaybackStarted'
+  );
+});
+
 test('configured Alexa skill id rejects requests from another application', async () => {
   const configuredHandler = loadHandlerWithSkillId(
     'amzn1.echo-sdk-ams.app.expected'

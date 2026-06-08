@@ -9,3 +9,5 @@
 3. Added CircleCI to run install, lint, format check, tests, and syntax build on
    every pushed commit.
 4. Preserved the existing Alexa request behavior and handler tests.
+5. Added an explicit unsupported request-type contract so dispatcher failures
+   are clear.
