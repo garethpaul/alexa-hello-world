@@ -4,6 +4,29 @@ A simple [AWS Lambda](http://aws.amazon.com/lambda) function that demonstrates h
 ## Concepts
 This simple sample has no external dependencies or session management, and shows the most basic example of how to create a Lambda function for handling Alexa Skill requests.
 
+## Local Verification
+
+Run the Lambda response tests before packaging changes:
+
+```sh
+npm test
+```
+
+The tests use Node's built-in test runner and do not require AWS credentials or
+third-party npm packages.
+
+## Configuration
+
+Set `ALEXA_SKILL_ID` when you want the Lambda to reject requests from any other
+Alexa skill application id:
+
+```sh
+export ALEXA_SKILL_ID='amzn1.echo-sdk-ams.app.your-skill-id'
+```
+
+Leaving `ALEXA_SKILL_ID` unset preserves the sample behavior and skips app-id
+validation.
+
 ## Setup
 To run this example skill you need to do two things. The first is to deploy the example code in lambda, and the second is to configure the Alexa skill to use Lambda.
 
@@ -29,8 +52,7 @@ To run this example skill you need to do two things. The first is to deploy the 
 3. Select the Lambda ARN for the skill Endpoint and paste the ARN copied from above. Click Next.
 4. Copy the Intent Schema from the included IntentSchema.json.
 5. Copy the Sample Utterances from the included SampleUtterances.txt. Click Next.
-6. [optional] go back to the skill Information tab and copy the appId. Paste the appId into the index.js file for the variable APP_ID,
-   then update the lambda source zip file with this change and upload to lambda again, this step makes sure the lambda function only serves request from authorized source.
+6. [optional] go back to the skill Information tab and copy the appId. Configure it as `ALEXA_SKILL_ID` for the Lambda environment, then update the lambda source zip file and upload to lambda again. This step makes sure the lambda function only serves requests from the authorized source.
 7. You are now able to start testing your sample skill! You should be able to go to the [Echo webpage](http://echo.amazon.com/#skills) and see your skill enabled.
 8. In order to test it, try to say some of the Sample Utterances from the Examples section below.
 9. Your skill is now saved and once you are finished testing you can continue to publish your skill.

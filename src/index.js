@@ -9,7 +9,7 @@
 /**
  * App ID for the skill
  */
-var APP_ID = undefined; //replace with "amzn1.echo-sdk-ams.app.[your-unique-value-here]";
+var APP_ID = process.env.ALEXA_SKILL_ID || undefined;
 
 /**
  * The AlexaSkill prototype and helper functions
