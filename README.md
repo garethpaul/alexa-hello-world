@@ -73,6 +73,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
 - Set `ALEXA_SKILL_ID` in deployed environments that should reject requests
   from unexpected Alexa skill application IDs.
+- Routine handler logs avoid raw Alexa request IDs, session IDs, and configured
+  or incoming application IDs.
 
 ## Security and Privacy Notes
 
@@ -92,6 +94,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   malformed Alexa event validation contract.
 - See `docs/plans/2026-06-09-alexa-session-ended-contract.md` for the
   session-ended lifecycle contract.
+- See `docs/plans/2026-06-09-alexa-log-identifier-redaction.md` for the
+  log-identifier redaction contract.
 
 ## Contributing
 

@@ -34,12 +34,7 @@ HelloWorld.prototype.eventHandlers.onSessionStarted = function (
   sessionStartedRequest,
   session
 ) {
-  console.log(
-    'HelloWorld onSessionStarted requestId: ' +
-      sessionStartedRequest.requestId +
-      ', sessionId: ' +
-      session.sessionId
-  );
+  console.log('HelloWorld onSessionStarted');
   // any initialization logic goes here
 };
 
@@ -48,12 +43,7 @@ HelloWorld.prototype.eventHandlers.onLaunch = function (
   session,
   response
 ) {
-  console.log(
-    'HelloWorld onLaunch requestId: ' +
-      launchRequest.requestId +
-      ', sessionId: ' +
-      session.sessionId
-  );
+  console.log('HelloWorld onLaunch');
   var speechOutput = 'Welcome to the Alexa Skills Kit, you can say hello';
   var repromptText = 'You can say hello';
   response.ask(speechOutput, repromptText);
@@ -63,12 +53,7 @@ HelloWorld.prototype.eventHandlers.onSessionEnded = function (
   sessionEndedRequest,
   session
 ) {
-  console.log(
-    'HelloWorld onSessionEnded requestId: ' +
-      sessionEndedRequest.requestId +
-      ', sessionId: ' +
-      session.sessionId
-  );
+  console.log('HelloWorld onSessionEnded');
   // any cleanup logic goes here
 };
 

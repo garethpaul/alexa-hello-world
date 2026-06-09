@@ -20,11 +20,31 @@ function loadHandlerWithSkillId(skillId) {
 function invokeEvent(event, options = {}) {
   return new Promise((resolve) => {
     const requestHandler = options.handler || handler;
+    const originalLog = console.log;
+    const logs = [];
 
-    requestHandler(event, {
-      succeed: (response) => resolve({ type: 'succeed', response }),
-      fail: (error) => resolve({ type: 'fail', error })
-    });
+    if (options.captureLogs) {
+      console.log = (...args) => {
+        logs.push(args.join(' '));
+      };
+    }
+
+    function finish(result) {
+      if (options.captureLogs) {
+        console.log = originalLog;
+      }
+
+      resolve(Object.assign({ logs }, result));
+    }
+
+    try {
+      requestHandler(event, {
+        succeed: (response) => finish({ type: 'succeed', response }),
+        fail: (error) => finish({ type: 'fail', error })
+      });
+    } catch (error) {
+      finish({ type: 'throw', error });
+    }
   });
 }
 
@@ -196,4 +216,43 @@ test('configured Alexa skill id rejects requests from another application', asyn
 
   assert.equal(result.type, 'fail');
   assert.equal(result.error, 'Invalid applicationId');
+});
+
+test('routine logs do not include raw Alexa request identifiers', async () => {
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    {
+      applicationId: 'amzn1.echo-sdk-ams.app.private',
+      captureLogs: true
+    }
+  );
+  const logText = result.logs.join('\n');
+
+  assert.equal(result.type, 'succeed');
+  assert.match(logText, /HelloWorld onSessionStarted/);
+  assert.match(logText, /HelloWorld onLaunch/);
+  assert.doesNotMatch(logText, /request-id/);
+  assert.doesNotMatch(logText, /session-id/);
+  assert.doesNotMatch(logText, /amzn1\.echo-sdk-ams\.app\.private/);
+});
+
+test('application id rejection logs do not include compared identifiers', async () => {
+  const configuredHandler = loadHandlerWithSkillId(
+    'amzn1.echo-sdk-ams.app.expected-private'
+  );
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    {
+      applicationId: 'amzn1.echo-sdk-ams.app.other-private',
+      captureLogs: true,
+      handler: configuredHandler
+    }
+  );
+  const logText = result.logs.join('\n');
+
+  assert.equal(result.type, 'fail');
+  assert.equal(result.error, 'Invalid applicationId');
+  assert.match(logText, /configured skill id/);
+  assert.doesNotMatch(logText, /expected-private/);
+  assert.doesNotMatch(logText, /other-private/);
 });

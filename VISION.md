@@ -22,6 +22,8 @@ Priority:
 - Support optional `ALEXA_SKILL_ID` validation for safer deployments
 - Keep malformed Alexa event failures explicit and locally testable
 - Keep common Alexa lifecycle request paths covered by local tests
+- Keep routine logs useful without exposing raw Alexa request, session, or
+  application identifiers
 - Keep AWS setup steps explicit for first-time users
 
 Next priorities:

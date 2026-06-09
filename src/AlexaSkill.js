@@ -102,21 +102,14 @@ AlexaSkill.prototype.execute = function (event, context) {
   try {
     validateEvent(event);
 
-    console.log(
-      'session applicationId: ' + event.session.application.applicationId
-    );
+    console.log('session applicationId validated');
 
     // Validate that this request originated from authorized source.
     if (
       this._appId &&
       event.session.application.applicationId !== this._appId
     ) {
-      console.log(
-        "The applicationIds don't match : " +
-          event.session.application.applicationId +
-          ' and ' +
-          this._appId
-      );
+      console.log("The applicationId doesn't match the configured skill id");
       throw 'Invalid applicationId';
     }
 

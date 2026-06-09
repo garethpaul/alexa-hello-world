@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-09
+
+1. Removed raw Alexa request IDs, session IDs, and application IDs from routine
+   handler logs while keeping lifecycle and validation diagnostics covered by
+   local tests.
+
 ## 2026-06-08
 
 1. Added explicit lint, format-check, test, and build scripts so local
