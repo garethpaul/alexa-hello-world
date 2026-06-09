@@ -15,3 +15,5 @@
    cleanly.
 7. Added `make check` as the root wrapper for lint, format, tests, and syntax
    checks.
+8. Added stable validation messages for malformed Alexa event envelopes and
+   intent requests.

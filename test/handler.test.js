@@ -17,6 +17,17 @@ function loadHandlerWithSkillId(skillId) {
   return require('../src/index').handler;
 }
 
+function invokeEvent(event, options = {}) {
+  return new Promise((resolve) => {
+    const requestHandler = options.handler || handler;
+
+    requestHandler(event, {
+      succeed: (response) => resolve({ type: 'succeed', response }),
+      fail: (error) => resolve({ type: 'fail', error })
+    });
+  });
+}
+
 function invoke(request, options = {}) {
   const event = {
     session: {
@@ -30,14 +41,7 @@ function invoke(request, options = {}) {
     request: Object.assign({ requestId: 'request-id' }, request)
   };
 
-  return new Promise((resolve) => {
-    const requestHandler = options.handler || handler;
-
-    requestHandler(event, {
-      succeed: (response) => resolve({ type: 'succeed', response }),
-      fail: (error) => resolve({ type: 'fail', error })
-    });
-  });
+  return invokeEvent(event, options);
 }
 
 test('launch request returns welcome prompt and keeps the session open', async () => {
@@ -117,6 +121,55 @@ test('unsupported request types fail with a clear message', async () => {
     result.error,
     'Unsupported request type = AudioPlayer.PlaybackStarted'
   );
+});
+
+test('malformed events without an application id fail with a clear message', async () => {
+  const result = await invokeEvent({
+    session: {
+      new: true,
+      sessionId: 'session-id',
+      attributes: {}
+    },
+    request: {
+      requestId: 'request-id',
+      type: 'LaunchRequest'
+    }
+  });
+
+  assert.equal(result.type, 'fail');
+  assert.equal(
+    result.error,
+    'Invalid Alexa event: missing session.application.applicationId'
+  );
+});
+
+test('malformed events without a request type fail with a clear message', async () => {
+  const result = await invokeEvent({
+    session: {
+      new: true,
+      sessionId: 'session-id',
+      application: {
+        applicationId: 'amzn1.echo-sdk-ams.app.test'
+      },
+      attributes: {}
+    },
+    request: {
+      requestId: 'request-id'
+    }
+  });
+
+  assert.equal(result.type, 'fail');
+  assert.equal(result.error, 'Invalid Alexa event: missing request.type');
+});
+
+test('malformed intent requests fail with a clear message', async () => {
+  const result = await invoke({
+    type: 'IntentRequest',
+    intent: {}
+  });
+
+  assert.equal(result.type, 'fail');
+  assert.equal(result.error, 'Invalid intent request: missing intent.name');
 });
 
 test('configured Alexa skill id rejects requests from another application', async () => {

@@ -4,6 +4,21 @@ function AlexaSkill(appId) {
   this._appId = appId;
 }
 
+function validateEvent(event) {
+  if (
+    !event ||
+    !event.session ||
+    !event.session.application ||
+    !event.session.application.applicationId
+  ) {
+    throw 'Invalid Alexa event: missing session.application.applicationId';
+  }
+
+  if (!event.request || !event.request.type) {
+    throw 'Invalid Alexa event: missing request.type';
+  }
+}
+
 AlexaSkill.speechOutputType = {
   PLAIN_TEXT: 'PlainText',
   SSML: 'SSML'
@@ -56,6 +71,10 @@ AlexaSkill.prototype.eventHandlers = {
    * Called when the user specifies an intent.
    */
   onIntent: function (intentRequest, session, response) {
+    if (!intentRequest.intent || !intentRequest.intent.name) {
+      throw 'Invalid intent request: missing intent.name';
+    }
+
     var intent = intentRequest.intent,
       intentName = intentRequest.intent.name,
       intentHandler = this.intentHandlers[intentName];
@@ -81,6 +100,8 @@ AlexaSkill.prototype.intentHandlers = {};
 
 AlexaSkill.prototype.execute = function (event, context) {
   try {
+    validateEvent(event);
+
     console.log(
       'session applicationId: ' + event.session.application.applicationId
     );

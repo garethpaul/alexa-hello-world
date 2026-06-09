@@ -63,13 +63,16 @@ Detected npm scripts:
 - `make check`
 - `npm test`
 - Handler tests cover launch, hello, help, cancel, stop, unsupported-intent,
-  unsupported-request, and configured application-id rejection flows.
+  unsupported-request, malformed-event, malformed-intent, and configured
+  application-id rejection flows.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
 ## Configuration and Secrets
 
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
+- Set `ALEXA_SKILL_ID` in deployed environments that should reject requests
+  from unexpected Alexa skill application IDs.
 
 ## Security and Privacy Notes
 
@@ -85,6 +88,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `VISION.md` for project direction and contribution guardrails.
 - See `docs/plans/2026-06-08-alexa-check-wrapper.md` for the root
   verification wrapper baseline.
+- See `docs/plans/2026-06-09-alexa-event-shape-validation.md` for the
+  malformed Alexa event validation contract.
 
 ## Contributing
 

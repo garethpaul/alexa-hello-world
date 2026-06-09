@@ -20,6 +20,7 @@ Priority:
 - Keep the Lambda handler simple enough to understand at a glance
 - Preserve local tests with `npm test`
 - Support optional `ALEXA_SKILL_ID` validation for safer deployments
+- Keep malformed Alexa event failures explicit and locally testable
 - Keep AWS setup steps explicit for first-time users
 
 Next priorities:
