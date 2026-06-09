@@ -15,3 +15,4 @@ build:
 verify: lint test build
 
 check: verify
+	sh scripts/check-baseline.sh

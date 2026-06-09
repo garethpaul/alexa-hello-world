@@ -19,6 +19,8 @@ Priority:
 
 - Keep the Lambda handler simple enough to understand at a glance
 - Preserve local tests with `npm test`
+- Keep `make check` and `scripts/check-baseline.sh` green before changes are
+  pushed
 - Support optional `ALEXA_SKILL_ID` validation for safer deployments
 - Treat blank `ALEXA_SKILL_ID` values as unset so misconfigured environments
   remain diagnosable
@@ -43,7 +45,9 @@ Next priorities:
 Contribution rules:
 
 - One PR = one focused sample improvement.
-- Run `npm test` before pushing code changes.
+- Run `npm test` and `make check` before pushing code changes.
+- Update `scripts/check-baseline.sh` when required files or verification docs
+  intentionally change.
 - Keep the sample dependency-light; new packages need a clear teaching or
   runtime purpose.
 - Update the README whenever setup, packaging, or environment variables change.

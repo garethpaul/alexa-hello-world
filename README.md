@@ -14,6 +14,7 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 
 - `README.md` - project overview and local usage notes
 - `package.json` - JavaScript dependency and script metadata
+- `scripts/check-baseline.sh` - repository baseline and local metadata hygiene guard
 - `.circleci` - source or example code
 - `docs` - source or example code
 - `package-lock.json` - JavaScript dependency and script metadata
@@ -27,7 +28,7 @@ Additional scan context:
 
 - Source directories: .circleci, docs, speechAssets, src, test
 - Dependency and build manifests: package-lock.json, package.json
-- Entry points or build surfaces: package.json
+- Entry points or build surfaces: package.json, scripts/check-baseline.sh
 - Test-looking files: docs/plans/2026-06-08-alexa-testability-baseline.md, test/handler.test.js
 
 ## Getting Started
@@ -61,7 +62,13 @@ Detected npm scripts:
 ## Testing and Verification
 
 - `make check`
+- `sh scripts/check-baseline.sh`
 - `npm test`
+- `make check` runs linting, formatting checks, tests, syntax checks, and the
+  scripted repository baseline.
+- `sh scripts/check-baseline.sh` verifies required files, npm scripts, Make
+  targets, completed plan metadata, README verification notes, and local
+  secret/editor ignore hygiene.
 - Handler tests cover launch, hello, help, cancel, stop, unsupported-intent,
   inherited intent-name rejection, session-ended, unsupported-request, inherited
   request-type rejection, malformed dispatch-key coercion, malformed-event,
@@ -112,6 +119,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   request-type dispatch own-property guarding.
 - See `docs/plans/2026-06-09-alexa-dispatch-key-type-validation.md` for
   dispatch-key string validation.
+- See `docs/plans/2026-06-09-scripted-baseline-check.md` for the scripted
+  repository baseline guard.
 
 ## Contributing
 
