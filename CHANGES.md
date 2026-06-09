@@ -17,3 +17,4 @@
    checks.
 8. Added stable validation messages for malformed Alexa event envelopes and
    intent requests.
+9. Added local coverage for the `SessionEndedRequest` lifecycle path.

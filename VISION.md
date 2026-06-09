@@ -21,11 +21,13 @@ Priority:
 - Preserve local tests with `npm test`
 - Support optional `ALEXA_SKILL_ID` validation for safer deployments
 - Keep malformed Alexa event failures explicit and locally testable
+- Keep common Alexa lifecycle request paths covered by local tests
 - Keep AWS setup steps explicit for first-time users
 
 Next priorities:
 
-- Expand request and response tests for common Alexa launch and intent flows
+- Expand request and response tests for common Alexa launch, lifecycle, and
+  intent flows
 - Keep Node.js runtime expectations current
 - Improve packaging guidance without adding unnecessary tooling
 - Make validation failures clear and easy to diagnose

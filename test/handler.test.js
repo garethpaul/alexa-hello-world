@@ -90,6 +90,16 @@ test('help intent returns help prompt and keeps the session open', async () => {
   assert.equal(result.response.response.shouldEndSession, false);
 });
 
+test('session ended request completes without a speech response', async () => {
+  const result = await invoke({
+    type: 'SessionEndedRequest',
+    reason: 'USER_INITIATED'
+  });
+
+  assert.equal(result.type, 'succeed');
+  assert.equal(result.response, undefined);
+});
+
 for (const intentName of ['AMAZON.CancelIntent', 'AMAZON.StopIntent']) {
   test(`${intentName} returns goodbye and ends the session`, async () => {
     const result = await invoke({

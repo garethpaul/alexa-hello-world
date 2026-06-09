@@ -63,8 +63,8 @@ Detected npm scripts:
 - `make check`
 - `npm test`
 - Handler tests cover launch, hello, help, cancel, stop, unsupported-intent,
-  unsupported-request, malformed-event, malformed-intent, and configured
-  application-id rejection flows.
+  session-ended, unsupported-request, malformed-event, malformed-intent, and
+  configured application-id rejection flows.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -90,6 +90,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   verification wrapper baseline.
 - See `docs/plans/2026-06-09-alexa-event-shape-validation.md` for the
   malformed Alexa event validation contract.
+- See `docs/plans/2026-06-09-alexa-session-ended-contract.md` for the
+  session-ended lifecycle contract.
 
 ## Contributing
 
