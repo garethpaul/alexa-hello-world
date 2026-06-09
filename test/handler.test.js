@@ -190,6 +190,33 @@ test('malformed events without an application id fail with a clear message', asy
   );
 });
 
+test('malformed events with non-string application ids fail before validation', async () => {
+  const result = await invokeEvent({
+    session: {
+      new: true,
+      sessionId: 'session-id',
+      application: {
+        applicationId: {
+          toString() {
+            return 'amzn1.echo-sdk-ams.app.test';
+          }
+        }
+      },
+      attributes: {}
+    },
+    request: {
+      requestId: 'request-id',
+      type: 'LaunchRequest'
+    }
+  });
+
+  assert.equal(result.type, 'fail');
+  assert.equal(
+    result.error,
+    'Invalid Alexa event: session.application.applicationId must be a non-empty string'
+  );
+});
+
 test('malformed events without a request type fail with a clear message', async () => {
   const result = await invokeEvent({
     session: {

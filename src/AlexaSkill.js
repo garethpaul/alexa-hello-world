@@ -22,6 +22,10 @@ function validateEvent(event) {
     throw 'Invalid Alexa event: missing session.application.applicationId';
   }
 
+  if (!isNonEmptyString(event.session.application.applicationId)) {
+    throw 'Invalid Alexa event: session.application.applicationId must be a non-empty string';
+  }
+
   if (!event.request || !hasOwn(event.request, 'type')) {
     throw 'Invalid Alexa event: missing request.type';
   }

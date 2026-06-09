@@ -25,6 +25,7 @@ Priority:
 - Treat blank `ALEXA_SKILL_ID` values as unset so misconfigured environments
   remain diagnosable
 - Keep malformed Alexa event failures explicit and locally testable
+- Require Alexa application IDs to be non-empty strings before dispatch
 - Reset malformed Alexa session attributes before building responses
 - Dispatch only explicitly declared request handlers
 - Dispatch only explicitly declared intent handlers

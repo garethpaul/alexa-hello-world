@@ -86,6 +86,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   are treated as unset.
 - Routine handler logs avoid raw Alexa request IDs, session IDs, and configured
   or incoming application IDs.
+- Alexa `session.application.applicationId` values must be non-empty strings
+  before optional skill-id comparison or request dispatch.
 - Alexa `request.type` and `intent.name` values must be non-empty strings before
   dispatch, so crafted objects cannot coerce into valid handler names.
 
@@ -105,6 +107,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   verification wrapper baseline.
 - See `docs/plans/2026-06-09-alexa-event-shape-validation.md` for the
   malformed Alexa event validation contract.
+- See `docs/plans/2026-06-09-alexa-application-id-type-validation.md` for the
+  application-id string validation contract.
 - See `docs/plans/2026-06-09-alexa-session-ended-contract.md` for the
   session-ended lifecycle contract.
 - See `docs/plans/2026-06-09-alexa-log-identifier-redaction.md` for the

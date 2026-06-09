@@ -2,6 +2,9 @@
 
 ## 2026-06-09
 
+1. Required Alexa `session.application.applicationId` values to be non-empty
+   strings before optional skill-id validation or request dispatch.
+1. Added handler coverage for malformed non-string application IDs.
 1. Added `scripts/check-baseline.sh` and wired it into `make check` so required
    files, npm script contracts, completed plans, and local metadata hygiene are
    checked before pushing.
