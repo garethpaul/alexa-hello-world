@@ -23,6 +23,7 @@ Priority:
 - Treat blank `ALEXA_SKILL_ID` values as unset so misconfigured environments
   remain diagnosable
 - Keep malformed Alexa event failures explicit and locally testable
+- Reset malformed Alexa session attributes before building responses
 - Keep common Alexa lifecycle request paths covered by local tests
 - Keep routine logs useful without exposing raw Alexa request, session, or
   application identifiers

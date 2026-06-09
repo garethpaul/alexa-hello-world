@@ -19,6 +19,14 @@ function validateEvent(event) {
   }
 }
 
+function isSessionAttributesObject(attributes) {
+  return (
+    attributes !== null &&
+    typeof attributes === 'object' &&
+    !Array.isArray(attributes)
+  );
+}
+
 AlexaSkill.speechOutputType = {
   PLAIN_TEXT: 'PlainText',
   SSML: 'SSML'
@@ -113,7 +121,7 @@ AlexaSkill.prototype.execute = function (event, context) {
       throw 'Invalid applicationId';
     }
 
-    if (!event.session.attributes) {
+    if (!isSessionAttributesObject(event.session.attributes)) {
       event.session.attributes = {};
     }
 

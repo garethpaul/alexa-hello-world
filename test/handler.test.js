@@ -192,6 +192,26 @@ test('malformed events without a request type fail with a clear message', async 
   assert.equal(result.error, 'Invalid Alexa event: missing request.type');
 });
 
+test('malformed session attributes are reset before responses are built', async () => {
+  const result = await invokeEvent({
+    session: {
+      new: true,
+      sessionId: 'session-id',
+      application: {
+        applicationId: 'amzn1.echo-sdk-ams.app.test'
+      },
+      attributes: 'not-an-object'
+    },
+    request: {
+      requestId: 'request-id',
+      type: 'LaunchRequest'
+    }
+  });
+
+  assert.equal(result.type, 'succeed');
+  assert.deepEqual(result.response.sessionAttributes, {});
+});
+
 test('malformed intent requests fail with a clear message', async () => {
   const result = await invoke({
     type: 'IntentRequest',

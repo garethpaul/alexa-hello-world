@@ -2,10 +2,12 @@
 
 ## 2026-06-09
 
+1. Reset malformed Alexa `session.attributes` values to an empty object before
+   building responses so invalid input cannot leak into `sessionAttributes`.
 1. Removed raw Alexa request IDs, session IDs, and application IDs from routine
    handler logs while keeping lifecycle and validation diagnostics covered by
    local tests.
-2. Normalized optional `ALEXA_SKILL_ID` configuration so real values are
+1. Normalized optional `ALEXA_SKILL_ID` configuration so real values are
    trimmed and blank values are treated as unset instead of rejecting every
    request.
 

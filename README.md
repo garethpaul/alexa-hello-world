@@ -65,6 +65,8 @@ Detected npm scripts:
 - Handler tests cover launch, hello, help, cancel, stop, unsupported-intent,
   session-ended, unsupported-request, malformed-event, malformed-intent, and
   configured application-id rejection flows.
+- Malformed Alexa `session.attributes` values are reset to an empty object
+  before response session attributes are built.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -99,6 +101,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   log-identifier redaction contract.
 - See `docs/plans/2026-06-09-alexa-skill-id-normalization.md` for the optional
   skill-id configuration contract.
+- See `docs/plans/2026-06-09-alexa-session-attributes-normalization.md` for
+  the session attributes normalization contract.
 
 ## Contributing
 
