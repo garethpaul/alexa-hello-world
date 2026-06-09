@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+1. Restricted intent dispatch to explicitly declared handler properties so
+   inherited object property names fail as unsupported intents.
 1. Reset malformed Alexa `session.attributes` values to an empty object before
    building responses so invalid input cannot leak into `sessionAttributes`.
 1. Removed raw Alexa request IDs, session IDs, and application IDs from routine

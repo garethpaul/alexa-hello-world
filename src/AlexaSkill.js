@@ -85,7 +85,12 @@ AlexaSkill.prototype.eventHandlers = {
 
     var intent = intentRequest.intent,
       intentName = intentRequest.intent.name,
-      intentHandler = this.intentHandlers[intentName];
+      intentHandler = Object.prototype.hasOwnProperty.call(
+        this.intentHandlers,
+        intentName
+      )
+        ? this.intentHandlers[intentName]
+        : undefined;
     if (intentHandler) {
       console.log('dispatch intent = ' + intentName);
       intentHandler.call(this, intent, session, response);

@@ -143,6 +143,16 @@ test('unsupported intents fail the lambda invocation', async () => {
   assert.equal(result.error, 'Unsupported intent = UnknownIntent');
 });
 
+test('inherited intent names are not dispatched', async () => {
+  const result = await invoke({
+    type: 'IntentRequest',
+    intent: { name: 'constructor' }
+  });
+
+  assert.equal(result.type, 'fail');
+  assert.equal(result.error, 'Unsupported intent = constructor');
+});
+
 test('unsupported request types fail with a clear message', async () => {
   const result = await invoke({ type: 'AudioPlayer.PlaybackStarted' });
 

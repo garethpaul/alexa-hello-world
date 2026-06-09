@@ -24,6 +24,7 @@ Priority:
   remain diagnosable
 - Keep malformed Alexa event failures explicit and locally testable
 - Reset malformed Alexa session attributes before building responses
+- Dispatch only explicitly declared intent handlers
 - Keep common Alexa lifecycle request paths covered by local tests
 - Keep routine logs useful without exposing raw Alexa request, session, or
   application identifiers
