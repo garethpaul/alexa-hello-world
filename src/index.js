@@ -9,7 +9,16 @@
 /**
  * App ID for the skill
  */
-var APP_ID = process.env.ALEXA_SKILL_ID || undefined;
+function configuredSkillId(value) {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  var skillId = value.trim();
+  return skillId.length > 0 ? skillId : undefined;
+}
+
+var APP_ID = configuredSkillId(process.env.ALEXA_SKILL_ID);
 
 /**
  * The AlexaSkill prototype and helper functions
@@ -79,3 +88,5 @@ exports.handler = function (event, context) {
   var helloWorld = new HelloWorld();
   helloWorld.execute(event, context);
 };
+
+exports.configuredSkillId = configuredSkillId;

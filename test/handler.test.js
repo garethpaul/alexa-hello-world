@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 
 delete process.env.ALEXA_SKILL_ID;
-const { handler } = require('../src/index');
+const { configuredSkillId, handler } = require('../src/index');
 
 function loadHandlerWithSkillId(skillId) {
   const modulePath = require.resolve('../src/index');
@@ -216,6 +216,41 @@ test('configured Alexa skill id rejects requests from another application', asyn
 
   assert.equal(result.type, 'fail');
   assert.equal(result.error, 'Invalid applicationId');
+});
+
+test('configured Alexa skill id trims configured values', async () => {
+  assert.equal(
+    configuredSkillId('  amzn1.echo-sdk-ams.app.expected  '),
+    'amzn1.echo-sdk-ams.app.expected'
+  );
+
+  const configuredHandler = loadHandlerWithSkillId(
+    '  amzn1.echo-sdk-ams.app.expected  '
+  );
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    {
+      applicationId: 'amzn1.echo-sdk-ams.app.expected',
+      handler: configuredHandler
+    }
+  );
+
+  assert.equal(result.type, 'succeed');
+});
+
+test('blank configured Alexa skill id leaves application validation disabled', async () => {
+  assert.equal(configuredSkillId('   '), undefined);
+
+  const configuredHandler = loadHandlerWithSkillId('   ');
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    {
+      applicationId: 'amzn1.echo-sdk-ams.app.any',
+      handler: configuredHandler
+    }
+  );
+
+  assert.equal(result.type, 'succeed');
 });
 
 test('routine logs do not include raw Alexa request identifiers', async () => {

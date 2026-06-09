@@ -20,6 +20,8 @@ Priority:
 - Keep the Lambda handler simple enough to understand at a glance
 - Preserve local tests with `npm test`
 - Support optional `ALEXA_SKILL_ID` validation for safer deployments
+- Treat blank `ALEXA_SKILL_ID` values as unset so misconfigured environments
+  remain diagnosable
 - Keep malformed Alexa event failures explicit and locally testable
 - Keep common Alexa lifecycle request paths covered by local tests
 - Keep routine logs useful without exposing raw Alexa request, session, or

@@ -5,6 +5,9 @@
 1. Removed raw Alexa request IDs, session IDs, and application IDs from routine
    handler logs while keeping lifecycle and validation diagnostics covered by
    local tests.
+2. Normalized optional `ALEXA_SKILL_ID` configuration so real values are
+   trimmed and blank values are treated as unset instead of rejecting every
+   request.
 
 ## 2026-06-08
 
