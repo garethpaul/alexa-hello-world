@@ -63,9 +63,9 @@ Detected npm scripts:
 - `make check`
 - `npm test`
 - Handler tests cover launch, hello, help, cancel, stop, unsupported-intent,
-  inherited intent-name rejection, session-ended, unsupported-request,
-  malformed-event, malformed-intent, and configured application-id rejection
-  flows.
+  inherited intent-name rejection, session-ended, unsupported-request, inherited
+  request-type rejection, malformed-event, malformed-intent, and configured
+  application-id rejection flows.
 - Malformed Alexa `session.attributes` values are reset to an empty object
   before response session attributes are built.
 
@@ -106,6 +106,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   the session attributes normalization contract.
 - See `docs/plans/2026-06-09-alexa-intent-own-property-dispatch.md` for
   intent dispatch own-property guarding.
+- See `docs/plans/2026-06-09-alexa-request-own-property-dispatch.md` for
+  request-type dispatch own-property guarding.
 
 ## Contributing
 

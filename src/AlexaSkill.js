@@ -135,7 +135,12 @@ AlexaSkill.prototype.execute = function (event, context) {
     }
 
     // Route the request to the proper handler which may have been overriden.
-    var requestHandler = this.requestHandlers[event.request.type];
+    var requestHandler = Object.prototype.hasOwnProperty.call(
+      this.requestHandlers,
+      event.request.type
+    )
+      ? this.requestHandlers[event.request.type]
+      : undefined;
     if (!requestHandler) {
       throw 'Unsupported request type = ' + event.request.type;
     }

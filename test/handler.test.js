@@ -163,6 +163,13 @@ test('unsupported request types fail with a clear message', async () => {
   );
 });
 
+test('inherited request type names are not dispatched', async () => {
+  const result = await invoke({ type: 'constructor' });
+
+  assert.equal(result.type, 'fail');
+  assert.equal(result.error, 'Unsupported request type = constructor');
+});
+
 test('malformed events without an application id fail with a clear message', async () => {
   const result = await invokeEvent({
     session: {
