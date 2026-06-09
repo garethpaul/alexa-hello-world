@@ -60,6 +60,7 @@ Detected npm scripts:
 
 ## Testing and Verification
 
+- `make check`
 - `npm test`
 - Handler tests cover launch, hello, help, cancel, stop, unsupported-intent,
   unsupported-request, and configured application-id rejection flows.
@@ -82,6 +83,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
+- See `docs/plans/2026-06-08-alexa-check-wrapper.md` for the root
+  verification wrapper baseline.
 
 ## Contributing
 

@@ -13,3 +13,5 @@
    are clear.
 6. Added built-in cancel and stop intent handling so users can exit the sample
    cleanly.
+7. Added `make check` as the root wrapper for lint, format, tests, and syntax
+   checks.
