@@ -64,8 +64,8 @@ Detected npm scripts:
 - `npm test`
 - Handler tests cover launch, hello, help, cancel, stop, unsupported-intent,
   inherited intent-name rejection, session-ended, unsupported-request, inherited
-  request-type rejection, malformed-event, malformed-intent, and configured
-  application-id rejection flows.
+  request-type rejection, malformed dispatch-key coercion, malformed-event,
+  malformed-intent, and configured application-id rejection flows.
 - Malformed Alexa `session.attributes` values are reset to an empty object
   before response session attributes are built.
 
@@ -79,6 +79,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   are treated as unset.
 - Routine handler logs avoid raw Alexa request IDs, session IDs, and configured
   or incoming application IDs.
+- Alexa `request.type` and `intent.name` values must be non-empty strings before
+  dispatch, so crafted objects cannot coerce into valid handler names.
 
 ## Security and Privacy Notes
 
@@ -108,6 +110,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   intent dispatch own-property guarding.
 - See `docs/plans/2026-06-09-alexa-request-own-property-dispatch.md` for
   request-type dispatch own-property guarding.
+- See `docs/plans/2026-06-09-alexa-dispatch-key-type-validation.md` for
+  dispatch-key string validation.
 
 ## Contributing
 

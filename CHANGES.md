@@ -2,6 +2,9 @@
 
 ## 2026-06-09
 
+1. Required Alexa `request.type` and `intent.name` dispatch keys to be
+   non-empty strings before handler lookup, blocking object-to-string coercion
+   into valid handler names.
 1. Restricted request-type dispatch to explicitly declared handler properties
    so inherited object property names fail as unsupported request types.
 1. Restricted intent dispatch to explicitly declared handler properties so

@@ -26,6 +26,7 @@ Priority:
 - Reset malformed Alexa session attributes before building responses
 - Dispatch only explicitly declared request handlers
 - Dispatch only explicitly declared intent handlers
+- Require dispatch keys to be non-empty strings before handler lookup
 - Keep common Alexa lifecycle request paths covered by local tests
 - Keep routine logs useful without exposing raw Alexa request, session, or
   application identifiers

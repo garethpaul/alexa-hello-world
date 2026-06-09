@@ -209,6 +209,33 @@ test('malformed events without a request type fail with a clear message', async 
   assert.equal(result.error, 'Invalid Alexa event: missing request.type');
 });
 
+test('malformed events with non-string request types fail before dispatch', async () => {
+  const result = await invokeEvent({
+    session: {
+      new: true,
+      sessionId: 'session-id',
+      application: {
+        applicationId: 'amzn1.echo-sdk-ams.app.test'
+      },
+      attributes: {}
+    },
+    request: {
+      requestId: 'request-id',
+      type: {
+        toString() {
+          return 'LaunchRequest';
+        }
+      }
+    }
+  });
+
+  assert.equal(result.type, 'fail');
+  assert.equal(
+    result.error,
+    'Invalid Alexa event: request.type must be a non-empty string'
+  );
+});
+
 test('malformed session attributes are reset before responses are built', async () => {
   const result = await invokeEvent({
     session: {
@@ -237,6 +264,25 @@ test('malformed intent requests fail with a clear message', async () => {
 
   assert.equal(result.type, 'fail');
   assert.equal(result.error, 'Invalid intent request: missing intent.name');
+});
+
+test('malformed intent requests with non-string names fail before dispatch', async () => {
+  const result = await invoke({
+    type: 'IntentRequest',
+    intent: {
+      name: {
+        toString() {
+          return 'HelloWorldIntent';
+        }
+      }
+    }
+  });
+
+  assert.equal(result.type, 'fail');
+  assert.equal(
+    result.error,
+    'Invalid intent request: intent.name must be a non-empty string'
+  );
 });
 
 test('configured Alexa skill id rejects requests from another application', async () => {

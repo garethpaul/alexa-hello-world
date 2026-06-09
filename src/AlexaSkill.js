@@ -4,6 +4,14 @@ function AlexaSkill(appId) {
   this._appId = appId;
 }
 
+function hasOwn(object, property) {
+  return Object.prototype.hasOwnProperty.call(object, property);
+}
+
+function isNonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
 function validateEvent(event) {
   if (
     !event ||
@@ -14,8 +22,12 @@ function validateEvent(event) {
     throw 'Invalid Alexa event: missing session.application.applicationId';
   }
 
-  if (!event.request || !event.request.type) {
+  if (!event.request || !hasOwn(event.request, 'type')) {
     throw 'Invalid Alexa event: missing request.type';
+  }
+
+  if (!isNonEmptyString(event.request.type)) {
+    throw 'Invalid Alexa event: request.type must be a non-empty string';
   }
 }
 
@@ -79,16 +91,17 @@ AlexaSkill.prototype.eventHandlers = {
    * Called when the user specifies an intent.
    */
   onIntent: function (intentRequest, session, response) {
-    if (!intentRequest.intent || !intentRequest.intent.name) {
+    if (!intentRequest.intent || !hasOwn(intentRequest.intent, 'name')) {
       throw 'Invalid intent request: missing intent.name';
+    }
+
+    if (!isNonEmptyString(intentRequest.intent.name)) {
+      throw 'Invalid intent request: intent.name must be a non-empty string';
     }
 
     var intent = intentRequest.intent,
       intentName = intentRequest.intent.name,
-      intentHandler = Object.prototype.hasOwnProperty.call(
-        this.intentHandlers,
-        intentName
-      )
+      intentHandler = hasOwn(this.intentHandlers, intentName)
         ? this.intentHandlers[intentName]
         : undefined;
     if (intentHandler) {
@@ -135,10 +148,7 @@ AlexaSkill.prototype.execute = function (event, context) {
     }
 
     // Route the request to the proper handler which may have been overriden.
-    var requestHandler = Object.prototype.hasOwnProperty.call(
-      this.requestHandlers,
-      event.request.type
-    )
+    var requestHandler = hasOwn(this.requestHandlers, event.request.type)
       ? this.requestHandlers[event.request.type]
       : undefined;
     if (!requestHandler) {
