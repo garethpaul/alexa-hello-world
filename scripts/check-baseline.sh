@@ -83,13 +83,23 @@ for target in "lint:" "test:" "build:" "verify:" "check:"; do
 done
 
 for dispatch_failure in \
-  "throw 'Unsupported intent';" \
-  "throw 'Unsupported request type';"; do
+  "throw new Error('Unsupported intent');" \
+  "throw new Error('Unsupported request type');"; do
   if ! grep -Fq "$dispatch_failure" "$ALEXA_SKILL"; then
     printf '%s\n' "Alexa dispatch must keep generic failure: $dispatch_failure" >&2
     exit 1
   fi
 done
+
+if grep -Fq "throw '" "$ALEXA_SKILL"; then
+  printf '%s\n' "AlexaSkill failures must use Error objects, not string throws." >&2
+  exit 1
+fi
+
+if ! grep -Fq "result.error instanceof Error" "$ROOT_DIR/test/handler.test.js"; then
+  printf '%s\n' "Handler tests must require stack-bearing Error failures." >&2
+  exit 1
+fi
 
 for reflected_failure in \
   "Unsupported intent =" \

@@ -14,6 +14,8 @@
    timeout, Node version, npm cache, install command, and verification command.
 6. Documented Node.js 20.19+, reproducible `npm ci` setup, and hosted CI parity.
 7. Updated Prettier from 3.8.3 to 3.8.4 and refreshed the lockfile.
+8. Replaced primitive string throws with stack-bearing `Error` objects while
+   preserving stable, non-reflective Lambda failure messages.
 
 ## 2026-06-09
 

@@ -35,6 +35,7 @@ Priority:
   application identifiers
 - Do not reflect unsupported caller-controlled request or intent names into
   Lambda failures or logs
+- Return stack-bearing `Error` objects for validation and dispatch failures
 - Keep AWS setup steps explicit for first-time users
 
 Next priorities:

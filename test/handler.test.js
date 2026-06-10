@@ -64,6 +64,13 @@ function invoke(request, options = {}) {
   return invokeEvent(event, options);
 }
 
+function assertFailure(result, message) {
+  assert.equal(result.type, 'fail');
+  assert.ok(result.error instanceof Error);
+  assert.equal(result.error.message, message);
+  assert.match(result.error.stack, /^Error: /);
+}
+
 test('launch request returns welcome prompt and keeps the session open', async () => {
   const result = await invoke({ type: 'LaunchRequest' });
 
@@ -139,8 +146,7 @@ test('unsupported intents fail the lambda invocation', async () => {
     intent: { name: 'UnknownIntent' }
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Unsupported intent');
+  assertFailure(result, 'Unsupported intent');
 });
 
 test('inherited intent names are not dispatched', async () => {
@@ -149,8 +155,7 @@ test('inherited intent names are not dispatched', async () => {
     intent: { name: 'constructor' }
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Unsupported intent');
+  assertFailure(result, 'Unsupported intent');
 });
 
 test('unsupported intent names are not reflected into logs or failures', async () => {
@@ -164,8 +169,7 @@ test('unsupported intent names are not reflected into logs or failures', async (
   );
   const logText = result.logs.join('\n');
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Unsupported intent');
+  assertFailure(result, 'Unsupported intent');
   assert.doesNotMatch(logText, /UnknownIntent/);
   assert.doesNotMatch(logText, /forged-intent-log/);
 });
@@ -173,15 +177,13 @@ test('unsupported intent names are not reflected into logs or failures', async (
 test('unsupported request types fail with a clear message', async () => {
   const result = await invoke({ type: 'AudioPlayer.PlaybackStarted' });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Unsupported request type');
+  assertFailure(result, 'Unsupported request type');
 });
 
 test('inherited request type names are not dispatched', async () => {
   const result = await invoke({ type: 'constructor' });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Unsupported request type');
+  assertFailure(result, 'Unsupported request type');
 });
 
 test('unsupported request types are not reflected into logs or failures', async () => {
@@ -189,8 +191,7 @@ test('unsupported request types are not reflected into logs or failures', async 
   const result = await invoke({ type: requestType }, { captureLogs: true });
   const logText = result.logs.join('\n');
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Unsupported request type');
+  assertFailure(result, 'Unsupported request type');
   assert.doesNotMatch(logText, /AudioPlayer\.Unknown/);
   assert.doesNotMatch(logText, /forged-request-log/);
 });
@@ -208,9 +209,8 @@ test('malformed events without an application id fail with a clear message', asy
     }
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(
-    result.error,
+  assertFailure(
+    result,
     'Invalid Alexa event: missing session.application.applicationId'
   );
 });
@@ -235,9 +235,8 @@ test('malformed events with non-string application ids fail before validation', 
     }
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(
-    result.error,
+  assertFailure(
+    result,
     'Invalid Alexa event: session.application.applicationId must be a non-empty string'
   );
 });
@@ -257,8 +256,7 @@ test('malformed events without a request type fail with a clear message', async 
     }
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Invalid Alexa event: missing request.type');
+  assertFailure(result, 'Invalid Alexa event: missing request.type');
 });
 
 test('malformed events with non-string request types fail before dispatch', async () => {
@@ -281,9 +279,8 @@ test('malformed events with non-string request types fail before dispatch', asyn
     }
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(
-    result.error,
+  assertFailure(
+    result,
     'Invalid Alexa event: request.type must be a non-empty string'
   );
 });
@@ -314,8 +311,7 @@ test('malformed intent requests fail with a clear message', async () => {
     intent: {}
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Invalid intent request: missing intent.name');
+  assertFailure(result, 'Invalid intent request: missing intent.name');
 });
 
 test('malformed intent requests with non-string names fail before dispatch', async () => {
@@ -330,9 +326,8 @@ test('malformed intent requests with non-string names fail before dispatch', asy
     }
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(
-    result.error,
+  assertFailure(
+    result,
     'Invalid intent request: intent.name must be a non-empty string'
   );
 });
@@ -349,8 +344,7 @@ test('configured Alexa skill id rejects requests from another application', asyn
     }
   );
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Invalid applicationId');
+  assertFailure(result, 'Invalid applicationId');
 });
 
 test('configured Alexa skill id trims configured values', async () => {
@@ -420,8 +414,7 @@ test('application id rejection logs do not include compared identifiers', async 
   );
   const logText = result.logs.join('\n');
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Invalid applicationId');
+  assertFailure(result, 'Invalid applicationId');
   assert.match(logText, /configured skill id/);
   assert.doesNotMatch(logText, /expected-private/);
   assert.doesNotMatch(logText, /other-private/);

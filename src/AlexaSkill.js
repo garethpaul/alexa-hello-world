@@ -19,19 +19,25 @@ function validateEvent(event) {
     !event.session.application ||
     !event.session.application.applicationId
   ) {
-    throw 'Invalid Alexa event: missing session.application.applicationId';
+    throw new Error(
+      'Invalid Alexa event: missing session.application.applicationId'
+    );
   }
 
   if (!isNonEmptyString(event.session.application.applicationId)) {
-    throw 'Invalid Alexa event: session.application.applicationId must be a non-empty string';
+    throw new Error(
+      'Invalid Alexa event: session.application.applicationId must be a non-empty string'
+    );
   }
 
   if (!event.request || !hasOwn(event.request, 'type')) {
-    throw 'Invalid Alexa event: missing request.type';
+    throw new Error('Invalid Alexa event: missing request.type');
   }
 
   if (!isNonEmptyString(event.request.type)) {
-    throw 'Invalid Alexa event: request.type must be a non-empty string';
+    throw new Error(
+      'Invalid Alexa event: request.type must be a non-empty string'
+    );
   }
 }
 
@@ -88,7 +94,7 @@ AlexaSkill.prototype.eventHandlers = {
    * The subclass must override this function and provide feedback to the user.
    */
   onLaunch: function (launchRequest, session, response) {
-    throw 'onLaunch should be overriden by subclass';
+    throw new Error('onLaunch should be overriden by subclass');
   },
 
   /**
@@ -96,11 +102,13 @@ AlexaSkill.prototype.eventHandlers = {
    */
   onIntent: function (intentRequest, session, response) {
     if (!intentRequest.intent || !hasOwn(intentRequest.intent, 'name')) {
-      throw 'Invalid intent request: missing intent.name';
+      throw new Error('Invalid intent request: missing intent.name');
     }
 
     if (!isNonEmptyString(intentRequest.intent.name)) {
-      throw 'Invalid intent request: intent.name must be a non-empty string';
+      throw new Error(
+        'Invalid intent request: intent.name must be a non-empty string'
+      );
     }
 
     var intent = intentRequest.intent,
@@ -112,7 +120,7 @@ AlexaSkill.prototype.eventHandlers = {
       console.log('dispatch intent = ' + intentName);
       intentHandler.call(this, intent, session, response);
     } else {
-      throw 'Unsupported intent';
+      throw new Error('Unsupported intent');
     }
   },
 
@@ -140,7 +148,7 @@ AlexaSkill.prototype.execute = function (event, context) {
       event.session.application.applicationId !== this._appId
     ) {
       console.log("The applicationId doesn't match the configured skill id");
-      throw 'Invalid applicationId';
+      throw new Error('Invalid applicationId');
     }
 
     if (!isSessionAttributesObject(event.session.attributes)) {
@@ -156,7 +164,7 @@ AlexaSkill.prototype.execute = function (event, context) {
       ? this.requestHandlers[event.request.type]
       : undefined;
     if (!requestHandler) {
-      throw 'Unsupported request type';
+      throw new Error('Unsupported request type');
     }
     requestHandler.call(
       this,
