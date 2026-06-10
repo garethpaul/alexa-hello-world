@@ -33,6 +33,8 @@ Priority:
 - Keep common Alexa lifecycle request paths covered by local tests
 - Keep routine logs useful without exposing raw Alexa request, session, or
   application identifiers
+- Do not reflect unsupported caller-controlled request or intent names into
+  Lambda failures or logs
 - Keep AWS setup steps explicit for first-time users
 
 Next priorities:

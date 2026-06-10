@@ -7,6 +7,7 @@ MAKEFILE="$ROOT_DIR/Makefile"
 PACKAGE_JSON="$ROOT_DIR/package.json"
 GITIGNORE="$ROOT_DIR/.gitignore"
 DOCS_PLANS="$ROOT_DIR/docs/plans"
+ALEXA_SKILL="$ROOT_DIR/src/AlexaSkill.js"
 
 require_file() {
   path=$1
@@ -47,6 +48,8 @@ WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 for workflow_contract in \
   "permissions:" \
   "contents: read" \
+  "runs-on: ubuntu-24.04" \
+  "cancel-in-progress: true" \
   "timeout-minutes: 10" \
   "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
   "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e" \
@@ -62,6 +65,11 @@ for workflow_contract in \
   fi
 done
 
+if ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE"; then
+  printf '%s\n' "Makefile must resolve repository paths from its own location." >&2
+  exit 1
+fi
+
 if ! grep -Fq "scripts/check-baseline.sh" "$MAKEFILE"; then
   printf '%s\n' "Makefile must run scripts/check-baseline.sh from make check." >&2
   exit 1
@@ -70,6 +78,24 @@ fi
 for target in "lint:" "test:" "build:" "verify:" "check:"; do
   if ! grep -Fq "$target" "$MAKEFILE"; then
     printf '%s\n' "Makefile must expose the $target gate." >&2
+    exit 1
+  fi
+done
+
+for dispatch_failure in \
+  "throw 'Unsupported intent';" \
+  "throw 'Unsupported request type';"; do
+  if ! grep -Fq "$dispatch_failure" "$ALEXA_SKILL"; then
+    printf '%s\n' "Alexa dispatch must keep generic failure: $dispatch_failure" >&2
+    exit 1
+  fi
+done
+
+for reflected_failure in \
+  "Unsupported intent =" \
+  "Unsupported request type ="; do
+  if grep -Fq "$reflected_failure" "$ALEXA_SKILL"; then
+    printf '%s\n' "Alexa dispatch must not reflect caller input via: $reflected_failure" >&2
     exit 1
   fi
 done

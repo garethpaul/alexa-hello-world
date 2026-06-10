@@ -1,18 +1,19 @@
 .PHONY: build check lint test verify
 
 NPM ?= npm
+ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 lint:
-	$(NPM) run lint
-	$(NPM) run format:check
+	cd $(ROOT) && $(NPM) run lint
+	cd $(ROOT) && $(NPM) run format:check
 
 test:
-	$(NPM) test
+	cd $(ROOT) && $(NPM) test
 
 build:
-	$(NPM) run build
+	cd $(ROOT) && $(NPM) run build
 
 verify: lint test build
 
 check: verify
-	sh scripts/check-baseline.sh
+	sh $(ROOT)scripts/check-baseline.sh

@@ -77,6 +77,8 @@ Detected npm scripts:
   inherited intent-name rejection, session-ended, unsupported-request, inherited
   request-type rejection, malformed dispatch-key coercion, malformed-event,
   malformed-intent, and configured application-id rejection flows.
+- Unsupported request types and intent names fail generically, without
+  reflecting caller-controlled dispatch names into Lambda failures or logs.
 - Malformed Alexa `session.attributes` values are reset to an empty object
   before response session attributes are built.
 
@@ -94,6 +96,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   before optional skill-id comparison or request dispatch.
 - Alexa `request.type` and `intent.name` values must be non-empty strings before
   dispatch, so crafted objects cannot coerce into valid handler names.
+- Rejected dispatch names are not included in failure diagnostics or logs,
+  preventing embedded control characters from forging log entries.
 
 ## Security and Privacy Notes
 

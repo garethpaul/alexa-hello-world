@@ -112,7 +112,7 @@ AlexaSkill.prototype.eventHandlers = {
       console.log('dispatch intent = ' + intentName);
       intentHandler.call(this, intent, session, response);
     } else {
-      throw 'Unsupported intent = ' + intentName;
+      throw 'Unsupported intent';
     }
   },
 
@@ -156,7 +156,7 @@ AlexaSkill.prototype.execute = function (event, context) {
       ? this.requestHandlers[event.request.type]
       : undefined;
     if (!requestHandler) {
-      throw 'Unsupported request type = ' + event.request.type;
+      throw 'Unsupported request type';
     }
     requestHandler.call(
       this,

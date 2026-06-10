@@ -140,7 +140,7 @@ test('unsupported intents fail the lambda invocation', async () => {
   });
 
   assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Unsupported intent = UnknownIntent');
+  assert.equal(result.error, 'Unsupported intent');
 });
 
 test('inherited intent names are not dispatched', async () => {
@@ -150,24 +150,49 @@ test('inherited intent names are not dispatched', async () => {
   });
 
   assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Unsupported intent = constructor');
+  assert.equal(result.error, 'Unsupported intent');
+});
+
+test('unsupported intent names are not reflected into logs or failures', async () => {
+  const intentName = 'UnknownIntent\nforged-intent-log';
+  const result = await invoke(
+    {
+      type: 'IntentRequest',
+      intent: { name: intentName }
+    },
+    { captureLogs: true }
+  );
+  const logText = result.logs.join('\n');
+
+  assert.equal(result.type, 'fail');
+  assert.equal(result.error, 'Unsupported intent');
+  assert.doesNotMatch(logText, /UnknownIntent/);
+  assert.doesNotMatch(logText, /forged-intent-log/);
 });
 
 test('unsupported request types fail with a clear message', async () => {
   const result = await invoke({ type: 'AudioPlayer.PlaybackStarted' });
 
   assert.equal(result.type, 'fail');
-  assert.equal(
-    result.error,
-    'Unsupported request type = AudioPlayer.PlaybackStarted'
-  );
+  assert.equal(result.error, 'Unsupported request type');
 });
 
 test('inherited request type names are not dispatched', async () => {
   const result = await invoke({ type: 'constructor' });
 
   assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Unsupported request type = constructor');
+  assert.equal(result.error, 'Unsupported request type');
+});
+
+test('unsupported request types are not reflected into logs or failures', async () => {
+  const requestType = 'AudioPlayer.Unknown\nforged-request-log';
+  const result = await invoke({ type: requestType }, { captureLogs: true });
+  const logText = result.logs.join('\n');
+
+  assert.equal(result.type, 'fail');
+  assert.equal(result.error, 'Unsupported request type');
+  assert.doesNotMatch(logText, /AudioPlayer\.Unknown/);
+  assert.doesNotMatch(logText, /forged-request-log/);
 });
 
 test('malformed events without an application id fail with a clear message', async () => {
