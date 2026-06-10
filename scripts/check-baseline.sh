@@ -24,6 +24,7 @@ for path in \
   "CHANGES.md" \
   "Makefile" \
   "README.md" \
+  ".github/workflows/check.yml" \
   "SECURITY.md" \
   "VISION.md" \
   "eslint.config.js" \
@@ -39,6 +40,24 @@ for path in \
   "docs/plans/2026-06-09-scripted-baseline-check.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
+done
+
+WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
+
+for workflow_contract in \
+  "permissions:" \
+  "contents: read" \
+  "timeout-minutes: 10" \
+  "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5" \
+  "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020" \
+  "node-version: '20.19'" \
+  "cache: npm" \
+  "run: npm ci" \
+  "run: make check"; do
+  if ! grep -Fq "$workflow_contract" "$WORKFLOW"; then
+    printf '%s\n' "GitHub Actions workflow must keep contract: $workflow_contract" >&2
+    exit 1
+  fi
 done
 
 if ! grep -Fq "scripts/check-baseline.sh" "$MAKEFILE"; then
@@ -68,6 +87,9 @@ done
 
 for documented in \
   "ALEXA_SKILL_ID" \
+  "Node.js 20.19" \
+  "npm ci" \
+  "GitHub Actions" \
   "make check" \
   "npm test" \
   "sh scripts/check-baseline.sh" \
