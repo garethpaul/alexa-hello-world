@@ -48,9 +48,11 @@ for workflow_contract in \
   "permissions:" \
   "contents: read" \
   "timeout-minutes: 10" \
-  "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5" \
-  "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020" \
-  "node-version: '20.19'" \
+  "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
+  "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e" \
+  "node-version: [20, 22, 24]" \
+  "node-version: \${{ matrix.node-version }}" \
+  "workflow_dispatch:" \
   "cache: npm" \
   "run: npm ci" \
   "run: make check"; do

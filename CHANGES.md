@@ -3,10 +3,11 @@
 ## 2026-06-10
 
 1. Added a pinned, least-privilege GitHub Actions workflow that installs the
-   locked dependency graph and runs the complete shared `make check` gate.
+   locked dependency graph and runs the complete shared `make check` gate on
+   Node 20, 22, and 24.
 2. Extended the baseline script to enforce CI action pins, permissions,
    timeout, Node version, npm cache, install command, and verification command.
-3. Documented Node.js 20.19, reproducible `npm ci` setup, and hosted CI parity.
+3. Documented Node.js 20.19+, reproducible `npm ci` setup, and hosted CI parity.
 4. Updated Prettier from 3.8.3 to 3.8.4 and refreshed the lockfile.
 
 ## 2026-06-09

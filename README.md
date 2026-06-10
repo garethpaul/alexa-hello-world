@@ -70,7 +70,8 @@ Detected npm scripts:
   targets, completed plan metadata, README verification notes, and local
   secret/editor ignore hygiene.
 - GitHub Actions installs the locked dependency graph with `npm ci` and runs
-  the same `make check` gate for pull requests and pushes to `master`.
+  the same `make check` gate on Node 20, 22, and 24 for pull requests, pushes
+  to `master`, and manual maintenance runs.
 - CircleCI keeps the equivalent verification job for existing integrations.
 - Handler tests cover launch, hello, help, cancel, stop, unsupported-intent,
   inherited intent-name rejection, session-ended, unsupported-request, inherited

@@ -19,7 +19,8 @@ least-privilege workflow settings.
 
 ## Implementation
 
-- Add `.github/workflows/check.yml` for Node.js 20.19.
+- Add `.github/workflows/check.yml` for Node.js 20, 22, and 24 with manual
+  dispatch.
 - Use `npm ci` followed by `make check`.
 - Extend `scripts/check-baseline.sh` with workflow and README assertions.
 - Document reproducible setup and CI parity in `README.md`.
