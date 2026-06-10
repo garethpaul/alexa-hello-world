@@ -36,14 +36,14 @@ Additional scan context:
 ### Prerequisites
 
 - Git
-- Node.js and npm
+- Node.js 20.19 or newer and npm
 
 ### Setup
 
 ```bash
 git clone https://github.com/garethpaul/alexa-hello-world.git
 cd alexa-hello-world
-npm install
+npm ci
 ```
 
 The setup commands above are derived from repository files. Legacy mobile, Python, or JavaScript samples may require older SDKs or package versions than a modern workstation uses by default.
@@ -69,6 +69,9 @@ Detected npm scripts:
 - `sh scripts/check-baseline.sh` verifies required files, npm scripts, Make
   targets, completed plan metadata, README verification notes, and local
   secret/editor ignore hygiene.
+- GitHub Actions installs the locked dependency graph with `npm ci` and runs
+  the same `make check` gate for pull requests and pushes to `master`.
+- CircleCI keeps the equivalent verification job for existing integrations.
 - Handler tests cover launch, hello, help, cancel, stop, unsupported-intent,
   inherited intent-name rejection, session-ended, unsupported-request, inherited
   request-type rejection, malformed dispatch-key coercion, malformed-event,
