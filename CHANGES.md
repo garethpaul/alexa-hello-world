@@ -1,16 +1,35 @@
 # Changes
 
+## 2026-06-12
+
+- Validated primary and reprompt speech before constructing Alexa responses.
+- Preserved string, `PlainText`, and `SSML` output forms while rejecting
+  missing, blank, non-string, and unsupported values with explicit `Error`
+  objects.
+- Added response-helper regression coverage and baseline contracts.
+
 ## 2026-06-10
 
-1. Added a pinned, least-privilege GitHub Actions workflow that installs the
-   locked dependency graph and runs the complete shared `make check` gate.
-2. Extended the baseline script to enforce CI action pins, permissions,
+1. Stopped reflecting unsupported Alexa request types and intent names into
+   Lambda failure values and logs.
+2. Added adversarial coverage for newline-bearing dispatch names.
+3. Made repository checks location-independent and pinned hosted checks to
+   Ubuntu 24.04 with superseded-run cancellation.
+4. Added a pinned, least-privilege GitHub Actions workflow that installs the
+   locked dependency graph and runs the complete shared `make check` gate on
+   Node 20, 22, and 24.
+5. Extended the baseline script to enforce CI action pins, permissions,
    timeout, Node version, npm cache, install command, and verification command.
-3. Documented Node.js 20.19, reproducible `npm ci` setup, and hosted CI parity.
-4. Updated Prettier from 3.8.3 to 3.8.4 and refreshed the lockfile.
+6. Documented Node.js 20.19+, reproducible `npm ci` setup, and hosted CI parity.
+7. Updated Prettier from 3.8.3 to 3.8.4 and refreshed the lockfile.
+8. Replaced primitive string throws with stack-bearing `Error` objects while
+   preserving stable, non-reflective Lambda failure messages.
 
 ## 2026-06-09
 
+1. Required Alexa `session.application.applicationId` values to be non-empty
+   strings before optional skill-id validation or request dispatch.
+1. Added handler coverage for malformed non-string application IDs.
 1. Added `scripts/check-baseline.sh` and wired it into `make check` so required
    files, npm script contracts, completed plans, and local metadata hygiene are
    checked before pushing.

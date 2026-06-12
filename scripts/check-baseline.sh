@@ -7,6 +7,7 @@ MAKEFILE="$ROOT_DIR/Makefile"
 PACKAGE_JSON="$ROOT_DIR/package.json"
 GITIGNORE="$ROOT_DIR/.gitignore"
 DOCS_PLANS="$ROOT_DIR/docs/plans"
+ALEXA_SKILL="$ROOT_DIR/src/AlexaSkill.js"
 
 require_file() {
   path=$1
@@ -17,6 +18,7 @@ require_file() {
 }
 
 for path in \
+  "AGENTS.md" \
   ".circleci/config.yml" \
   ".gitignore" \
   ".prettierignore" \
@@ -38,8 +40,31 @@ for path in \
   "docs/plans/2026-06-08-alexa-check-wrapper.md" \
   "docs/plans/2026-06-09-alexa-dispatch-key-type-validation.md" \
   "docs/plans/2026-06-09-scripted-baseline-check.md" \
+  "docs/plans/2026-06-12-alexa-speech-output-validation.md" \
+  "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
+done
+
+for speech_contract in \
+  "function normalizeSpeechOutput(optionsParam)" \
+  "Invalid speech output: expected a string or options object" \
+  "Invalid speech output: type must be PlainText or SSML" \
+  "Invalid speech output: speech must be a non-empty string"; do
+  if ! grep -Fq "$speech_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "Alexa speech output validation must keep contract: $speech_contract" >&2
+    exit 1
+  fi
+done
+
+for response_test in \
+  "response helper accepts explicit PlainText and SSML speech" \
+  "missing reprompt speech fails before returning an Alexa response" \
+  "blank reprompt speech fails before returning an Alexa response"; do
+  if ! grep -Fq "$response_test" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep response validation case: $response_test" >&2
+    exit 1
+  fi
 done
 
 WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
@@ -47,10 +72,15 @@ WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 for workflow_contract in \
   "permissions:" \
   "contents: read" \
+  "runs-on: ubuntu-24.04" \
+  "cancel-in-progress: true" \
   "timeout-minutes: 10" \
-  "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5" \
-  "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020" \
-  "node-version: '20.19'" \
+  "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
+  "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e" \
+  "persist-credentials: false" \
+  "node-version: [20, 22, 24]" \
+  "node-version: \${{ matrix.node-version }}" \
+  "workflow_dispatch:" \
   "cache: npm" \
   "run: npm ci" \
   "run: make check"; do
@@ -60,6 +90,52 @@ for workflow_contract in \
   fi
 done
 
+if grep -Fq "pull_request_target:" "$WORKFLOW"; then
+  printf '%s\n' "GitHub Actions workflow must not use pull_request_target." >&2
+  exit 1
+fi
+
+for trigger in "pull_request:" "push:"; do
+  if ! grep -Fq "$trigger" "$WORKFLOW"; then
+    printf '%s\n' "GitHub Actions workflow must keep trigger: $trigger" >&2
+    exit 1
+  fi
+done
+
+if grep -Eq '^[[:space:]]+[[:alnum:]_-]+:[[:space:]]*write([[:space:]]|$)' "$WORKFLOW" ||
+  grep -Eq '^[[:space:]]+id-token:' "$WORKFLOW"; then
+  printf '%s\n' "GitHub Actions workflow must not grant write or OIDC permissions." >&2
+  exit 1
+fi
+
+action_uses=$(sed -n \
+  -e 's/^[[:space:]]*uses:[[:space:]]*\([^[:space:]#]*\).*/\1/p' \
+  -e 's/^[[:space:]]*-[[:space:]]*uses:[[:space:]]*\([^[:space:]#]*\).*/\1/p' \
+  "$WORKFLOW")
+expected_action_uses=$(printf '%s\n' \
+  "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
+  "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e")
+if [ "$action_uses" != "$expected_action_uses" ]; then
+  printf '%s\n' "GitHub Actions workflow must use only the reviewed pinned actions." >&2
+  exit 1
+fi
+
+if ! grep -Fq "![Project overview](docs/readme-overview.svg)" "$README"; then
+  printf '%s\n' "README must embed the project overview artwork." >&2
+  exit 1
+fi
+
+for svg_contract in "<svg" "viewBox=" "</svg>"; do
+  if ! grep -Fq "$svg_contract" "$ROOT_DIR/docs/readme-overview.svg"; then
+    printf '%s\n' "README overview must keep SVG contract: $svg_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE"; then
+  printf '%s\n' "Makefile must resolve repository paths from its own location." >&2
+  exit 1
+fi
 if ! grep -Fq "scripts/check-baseline.sh" "$MAKEFILE"; then
   printf '%s\n' "Makefile must run scripts/check-baseline.sh from make check." >&2
   exit 1
@@ -68,6 +144,34 @@ fi
 for target in "lint:" "test:" "build:" "verify:" "check:"; do
   if ! grep -Fq "$target" "$MAKEFILE"; then
     printf '%s\n' "Makefile must expose the $target gate." >&2
+    exit 1
+  fi
+done
+
+for dispatch_failure in \
+  "throw new Error('Unsupported intent');" \
+  "throw new Error('Unsupported request type');"; do
+  if ! grep -Fq "$dispatch_failure" "$ALEXA_SKILL"; then
+    printf '%s\n' "Alexa dispatch must keep generic failure: $dispatch_failure" >&2
+    exit 1
+  fi
+done
+
+if grep -Fq "throw '" "$ALEXA_SKILL"; then
+  printf '%s\n' "AlexaSkill failures must use Error objects, not string throws." >&2
+  exit 1
+fi
+
+if ! grep -Fq "result.error instanceof Error" "$ROOT_DIR/test/handler.test.js"; then
+  printf '%s\n' "Handler tests must require stack-bearing Error failures." >&2
+  exit 1
+fi
+
+for reflected_failure in \
+  "Unsupported intent =" \
+  "Unsupported request type ="; do
+  if grep -Fq "$reflected_failure" "$ALEXA_SKILL"; then
+    printf '%s\n' "Alexa dispatch must not reflect caller input via: $reflected_failure" >&2
     exit 1
   fi
 done

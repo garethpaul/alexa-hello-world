@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 
 delete process.env.ALEXA_SKILL_ID;
+const AlexaSkill = require('../src/AlexaSkill');
 const { configuredSkillId, handler } = require('../src/index');
 
 function loadHandlerWithSkillId(skillId) {
@@ -64,6 +65,43 @@ function invoke(request, options = {}) {
   return invokeEvent(event, options);
 }
 
+function assertFailure(result, message) {
+  assert.equal(result.type, 'fail');
+  assert.ok(result.error instanceof Error);
+  assert.equal(result.error.message, message);
+  assert.match(result.error.stack, /^Error: /);
+}
+
+function responseHandler(output, reprompt, shouldAsk) {
+  return function (event, context) {
+    const skill = new AlexaSkill();
+    skill.eventHandlers = Object.assign({}, skill.eventHandlers, {
+      onLaunch: function (launchRequest, session, response) {
+        if (shouldAsk) {
+          response.ask(output, reprompt);
+        } else {
+          response.tell(output);
+        }
+      }
+    });
+    skill.execute(event, context);
+  };
+}
+
+function invokeResponse(output, reprompt) {
+  return invoke(
+    { type: 'LaunchRequest' },
+    { handler: responseHandler(output, reprompt, false) }
+  );
+}
+
+function invokeAskResponse(output, reprompt) {
+  return invoke(
+    { type: 'LaunchRequest' },
+    { handler: responseHandler(output, reprompt, true) }
+  );
+}
+
 test('launch request returns welcome prompt and keeps the session open', async () => {
   const result = await invoke({ type: 'LaunchRequest' });
 
@@ -77,6 +115,79 @@ test('launch request returns welcome prompt and keeps the session open', async (
     'You can say hello'
   );
   assert.equal(result.response.response.shouldEndSession, false);
+});
+
+test('response helper accepts explicit PlainText and SSML speech', async () => {
+  const plainText = await invokeResponse({
+    type: 'PlainText',
+    speech: 'Hello from options'
+  });
+  const ssml = await invokeResponse({
+    type: 'SSML',
+    speech: '<speak>Hello</speak>'
+  });
+
+  assert.equal(plainText.type, 'succeed');
+  assert.deepEqual(plainText.response.response.outputSpeech, {
+    type: 'PlainText',
+    text: 'Hello from options'
+  });
+  assert.equal(ssml.type, 'succeed');
+  assert.deepEqual(ssml.response.response.outputSpeech, {
+    type: 'SSML',
+    ssml: '<speak>Hello</speak>'
+  });
+});
+
+for (const [name, output, message] of [
+  [
+    'missing speech output',
+    undefined,
+    'Invalid speech output: expected a string or options object'
+  ],
+  [
+    'blank speech output',
+    '   ',
+    'Invalid speech output: speech must be a non-empty string'
+  ],
+  [
+    'non-string speech content',
+    { type: 'PlainText', speech: 42 },
+    'Invalid speech output: speech must be a non-empty string'
+  ],
+  [
+    'unsupported speech type',
+    { type: 'Audio', speech: 'caller-controlled-type' },
+    'Invalid speech output: type must be PlainText or SSML'
+  ]
+]) {
+  test(`${name} fails before returning an Alexa response`, async () => {
+    const result = await invokeResponse(output);
+
+    assertFailure(result, message);
+    assert.doesNotMatch(result.error.message, /caller-controlled-type/);
+  });
+}
+
+test('missing reprompt speech fails before returning an Alexa response', async () => {
+  const result = await invokeAskResponse('Valid primary speech', undefined);
+
+  assertFailure(
+    result,
+    'Invalid speech output: expected a string or options object'
+  );
+});
+
+test('blank reprompt speech fails before returning an Alexa response', async () => {
+  const result = await invokeAskResponse('Valid primary speech', {
+    type: 'SSML',
+    speech: ''
+  });
+
+  assertFailure(
+    result,
+    'Invalid speech output: speech must be a non-empty string'
+  );
 });
 
 test('HelloWorldIntent returns the hello card and ends the session', async () => {
@@ -139,8 +250,7 @@ test('unsupported intents fail the lambda invocation', async () => {
     intent: { name: 'UnknownIntent' }
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Unsupported intent = UnknownIntent');
+  assertFailure(result, 'Unsupported intent');
 });
 
 test('inherited intent names are not dispatched', async () => {
@@ -149,25 +259,45 @@ test('inherited intent names are not dispatched', async () => {
     intent: { name: 'constructor' }
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Unsupported intent = constructor');
+  assertFailure(result, 'Unsupported intent');
+});
+
+test('unsupported intent names are not reflected into logs or failures', async () => {
+  const intentName = 'UnknownIntent\nforged-intent-log';
+  const result = await invoke(
+    {
+      type: 'IntentRequest',
+      intent: { name: intentName }
+    },
+    { captureLogs: true }
+  );
+  const logText = result.logs.join('\n');
+
+  assertFailure(result, 'Unsupported intent');
+  assert.doesNotMatch(logText, /UnknownIntent/);
+  assert.doesNotMatch(logText, /forged-intent-log/);
 });
 
 test('unsupported request types fail with a clear message', async () => {
   const result = await invoke({ type: 'AudioPlayer.PlaybackStarted' });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(
-    result.error,
-    'Unsupported request type = AudioPlayer.PlaybackStarted'
-  );
+  assertFailure(result, 'Unsupported request type');
 });
 
 test('inherited request type names are not dispatched', async () => {
   const result = await invoke({ type: 'constructor' });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Unsupported request type = constructor');
+  assertFailure(result, 'Unsupported request type');
+});
+
+test('unsupported request types are not reflected into logs or failures', async () => {
+  const requestType = 'AudioPlayer.Unknown\nforged-request-log';
+  const result = await invoke({ type: requestType }, { captureLogs: true });
+  const logText = result.logs.join('\n');
+
+  assertFailure(result, 'Unsupported request type');
+  assert.doesNotMatch(logText, /AudioPlayer\.Unknown/);
+  assert.doesNotMatch(logText, /forged-request-log/);
 });
 
 test('malformed events without an application id fail with a clear message', async () => {
@@ -183,10 +313,35 @@ test('malformed events without an application id fail with a clear message', asy
     }
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(
-    result.error,
+  assertFailure(
+    result,
     'Invalid Alexa event: missing session.application.applicationId'
+  );
+});
+
+test('malformed events with non-string application ids fail before validation', async () => {
+  const result = await invokeEvent({
+    session: {
+      new: true,
+      sessionId: 'session-id',
+      application: {
+        applicationId: {
+          toString() {
+            return 'amzn1.echo-sdk-ams.app.test';
+          }
+        }
+      },
+      attributes: {}
+    },
+    request: {
+      requestId: 'request-id',
+      type: 'LaunchRequest'
+    }
+  });
+
+  assertFailure(
+    result,
+    'Invalid Alexa event: session.application.applicationId must be a non-empty string'
   );
 });
 
@@ -205,8 +360,7 @@ test('malformed events without a request type fail with a clear message', async 
     }
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Invalid Alexa event: missing request.type');
+  assertFailure(result, 'Invalid Alexa event: missing request.type');
 });
 
 test('malformed events with non-string request types fail before dispatch', async () => {
@@ -229,9 +383,8 @@ test('malformed events with non-string request types fail before dispatch', asyn
     }
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(
-    result.error,
+  assertFailure(
+    result,
     'Invalid Alexa event: request.type must be a non-empty string'
   );
 });
@@ -262,8 +415,7 @@ test('malformed intent requests fail with a clear message', async () => {
     intent: {}
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Invalid intent request: missing intent.name');
+  assertFailure(result, 'Invalid intent request: missing intent.name');
 });
 
 test('malformed intent requests with non-string names fail before dispatch', async () => {
@@ -278,9 +430,8 @@ test('malformed intent requests with non-string names fail before dispatch', asy
     }
   });
 
-  assert.equal(result.type, 'fail');
-  assert.equal(
-    result.error,
+  assertFailure(
+    result,
     'Invalid intent request: intent.name must be a non-empty string'
   );
 });
@@ -297,8 +448,7 @@ test('configured Alexa skill id rejects requests from another application', asyn
     }
   );
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Invalid applicationId');
+  assertFailure(result, 'Invalid applicationId');
 });
 
 test('configured Alexa skill id trims configured values', async () => {
@@ -368,8 +518,7 @@ test('application id rejection logs do not include compared identifiers', async 
   );
   const logText = result.logs.join('\n');
 
-  assert.equal(result.type, 'fail');
-  assert.equal(result.error, 'Invalid applicationId');
+  assertFailure(result, 'Invalid applicationId');
   assert.match(logText, /configured skill id/);
   assert.doesNotMatch(logText, /expected-private/);
   assert.doesNotMatch(logText, /other-private/);

@@ -13,13 +13,14 @@ least-privilege workflow settings.
 - Hosted CI installs exactly the dependency graph in `package-lock.json`.
 - Hosted CI runs the same `make check` command documented for contributors.
 - Actions are pinned to immutable commits, repository permissions are read-only,
-  and the job has a bounded timeout.
+  checkout credentials are not persisted, and the job has a bounded timeout.
 - The repository baseline script verifies the workflow contract so CI cannot
   silently lose required checks.
 
 ## Implementation
 
-- Add `.github/workflows/check.yml` for Node.js 20.19.
+- Add `.github/workflows/check.yml` for Node.js 20, 22, and 24 with manual
+  dispatch.
 - Use `npm ci` followed by `make check`.
 - Extend `scripts/check-baseline.sh` with workflow and README assertions.
 - Document reproducible setup and CI parity in `README.md`.

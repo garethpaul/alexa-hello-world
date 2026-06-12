@@ -25,6 +25,7 @@ Priority:
 - Treat blank `ALEXA_SKILL_ID` values as unset so misconfigured environments
   remain diagnosable
 - Keep malformed Alexa event failures explicit and locally testable
+- Require Alexa application IDs to be non-empty strings before dispatch
 - Reset malformed Alexa session attributes before building responses
 - Dispatch only explicitly declared request handlers
 - Dispatch only explicitly declared intent handlers
@@ -32,6 +33,10 @@ Priority:
 - Keep common Alexa lifecycle request paths covered by local tests
 - Keep routine logs useful without exposing raw Alexa request, session, or
   application identifiers
+- Do not reflect unsupported caller-controlled request or intent names into
+  Lambda failures or logs
+- Return stack-bearing `Error` objects for validation and dispatch failures
+- Validate primary and reprompt speech before constructing Alexa responses
 - Keep AWS setup steps explicit for first-time users
 
 Next priorities:

@@ -34,6 +34,9 @@ Helpful reports include:
 - Dependency manifests detected: package.json, package-lock.json. Dependency updates should preserve lockfiles when present and avoid introducing packages without a clear maintenance reason.
 - Alexa request dispatch should reject non-string handler keys before lookup so
   crafted objects cannot coerce into supported request or intent names.
+- Primary and reprompt speech must be validated before response construction;
+  unsupported types and missing, blank, or non-string speech fail before
+  `context.succeed` receives a payload.
 
 ## Service and API Notes
 

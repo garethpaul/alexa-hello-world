@@ -70,12 +70,15 @@ Detected npm scripts:
   targets, completed plan metadata, README verification notes, and local
   secret/editor ignore hygiene.
 - GitHub Actions installs the locked dependency graph with `npm ci` and runs
-  the same `make check` gate for pull requests and pushes to `master`.
+  the same `make check` gate on Node 20, 22, and 24 for pull requests, pushes
+  to `master`, and manual maintenance runs.
 - CircleCI keeps the equivalent verification job for existing integrations.
 - Handler tests cover launch, hello, help, cancel, stop, unsupported-intent,
   inherited intent-name rejection, session-ended, unsupported-request, inherited
   request-type rejection, malformed dispatch-key coercion, malformed-event,
   malformed-intent, and configured application-id rejection flows.
+- Unsupported request types and intent names fail generically, without
+  reflecting caller-controlled dispatch names into Lambda failures or logs.
 - Malformed Alexa `session.attributes` values are reset to an empty object
   before response session attributes are built.
 
@@ -89,8 +92,15 @@ When the required SDK or runtime is unavailable, use static checks and source re
   are treated as unset.
 - Routine handler logs avoid raw Alexa request IDs, session IDs, and configured
   or incoming application IDs.
+- Alexa `session.application.applicationId` values must be non-empty strings
+  before optional skill-id comparison or request dispatch.
 - Alexa `request.type` and `intent.name` values must be non-empty strings before
   dispatch, so crafted objects cannot coerce into valid handler names.
+- Rejected dispatch names are not included in failure diagnostics or logs,
+  preventing embedded control characters from forging log entries.
+- Primary and reprompt speech are validated before response construction.
+  Supported output is a non-empty string or a `PlainText`/`SSML` options
+  object; malformed output fails before `context.succeed` receives a payload.
 
 ## Security and Privacy Notes
 
@@ -108,6 +118,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   verification wrapper baseline.
 - See `docs/plans/2026-06-09-alexa-event-shape-validation.md` for the
   malformed Alexa event validation contract.
+- See `docs/plans/2026-06-09-alexa-application-id-type-validation.md` for the
+  application-id string validation contract.
 - See `docs/plans/2026-06-09-alexa-session-ended-contract.md` for the
   session-ended lifecycle contract.
 - See `docs/plans/2026-06-09-alexa-log-identifier-redaction.md` for the
@@ -124,6 +136,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   dispatch-key string validation.
 - See `docs/plans/2026-06-09-scripted-baseline-check.md` for the scripted
   repository baseline guard.
+- See `docs/plans/2026-06-12-alexa-speech-output-validation.md` for response
+  speech validation and regression coverage.
 
 ## Contributing
 

@@ -53,7 +53,13 @@
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
 - Set `ALEXA_SKILL_ID` in deployed environments that should reject requests from unexpected Alexa skill application IDs. Values are trimmed; blank values are treated as unset.
 - Routine handler logs avoid raw Alexa request IDs, session IDs, and configured or incoming application IDs.
+- Alexa `session.application.applicationId` must be a non-empty string before
+  optional skill-id validation or request dispatch.
 - Alexa `request.type` and `intent.name` values must be non-empty strings before dispatch, so crafted objects cannot coerce into valid handler names.
+- Unsupported request types and intent names fail with generic, stack-bearing
+  `Error` objects and must not be reflected into logs or Lambda failure values.
+- Primary and reprompt speech must be non-empty strings or `PlainText`/`SSML`
+  option objects before response construction.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 
