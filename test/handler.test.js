@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 
 delete process.env.ALEXA_SKILL_ID;
+const AlexaSkill = require('../src/AlexaSkill');
 const { configuredSkillId, handler } = require('../src/index');
 
 function loadHandlerWithSkillId(skillId) {
@@ -71,6 +72,36 @@ function assertFailure(result, message) {
   assert.match(result.error.stack, /^Error: /);
 }
 
+function responseHandler(output, reprompt, shouldAsk) {
+  return function (event, context) {
+    const skill = new AlexaSkill();
+    skill.eventHandlers = Object.assign({}, skill.eventHandlers, {
+      onLaunch: function (launchRequest, session, response) {
+        if (shouldAsk) {
+          response.ask(output, reprompt);
+        } else {
+          response.tell(output);
+        }
+      }
+    });
+    skill.execute(event, context);
+  };
+}
+
+function invokeResponse(output, reprompt) {
+  return invoke(
+    { type: 'LaunchRequest' },
+    { handler: responseHandler(output, reprompt, false) }
+  );
+}
+
+function invokeAskResponse(output, reprompt) {
+  return invoke(
+    { type: 'LaunchRequest' },
+    { handler: responseHandler(output, reprompt, true) }
+  );
+}
+
 test('launch request returns welcome prompt and keeps the session open', async () => {
   const result = await invoke({ type: 'LaunchRequest' });
 
@@ -84,6 +115,79 @@ test('launch request returns welcome prompt and keeps the session open', async (
     'You can say hello'
   );
   assert.equal(result.response.response.shouldEndSession, false);
+});
+
+test('response helper accepts explicit PlainText and SSML speech', async () => {
+  const plainText = await invokeResponse({
+    type: 'PlainText',
+    speech: 'Hello from options'
+  });
+  const ssml = await invokeResponse({
+    type: 'SSML',
+    speech: '<speak>Hello</speak>'
+  });
+
+  assert.equal(plainText.type, 'succeed');
+  assert.deepEqual(plainText.response.response.outputSpeech, {
+    type: 'PlainText',
+    text: 'Hello from options'
+  });
+  assert.equal(ssml.type, 'succeed');
+  assert.deepEqual(ssml.response.response.outputSpeech, {
+    type: 'SSML',
+    ssml: '<speak>Hello</speak>'
+  });
+});
+
+for (const [name, output, message] of [
+  [
+    'missing speech output',
+    undefined,
+    'Invalid speech output: expected a string or options object'
+  ],
+  [
+    'blank speech output',
+    '   ',
+    'Invalid speech output: speech must be a non-empty string'
+  ],
+  [
+    'non-string speech content',
+    { type: 'PlainText', speech: 42 },
+    'Invalid speech output: speech must be a non-empty string'
+  ],
+  [
+    'unsupported speech type',
+    { type: 'Audio', speech: 'caller-controlled-type' },
+    'Invalid speech output: type must be PlainText or SSML'
+  ]
+]) {
+  test(`${name} fails before returning an Alexa response`, async () => {
+    const result = await invokeResponse(output);
+
+    assertFailure(result, message);
+    assert.doesNotMatch(result.error.message, /caller-controlled-type/);
+  });
+}
+
+test('missing reprompt speech fails before returning an Alexa response', async () => {
+  const result = await invokeAskResponse('Valid primary speech', undefined);
+
+  assertFailure(
+    result,
+    'Invalid speech output: expected a string or options object'
+  );
+});
+
+test('blank reprompt speech fails before returning an Alexa response', async () => {
+  const result = await invokeAskResponse('Valid primary speech', {
+    type: 'SSML',
+    speech: ''
+  });
+
+  assertFailure(
+    result,
+    'Invalid speech output: speech must be a non-empty string'
+  );
 });
 
 test('HelloWorldIntent returns the hello card and ends the session', async () => {

@@ -39,8 +39,30 @@ for path in \
   "docs/plans/2026-06-08-alexa-check-wrapper.md" \
   "docs/plans/2026-06-09-alexa-dispatch-key-type-validation.md" \
   "docs/plans/2026-06-09-scripted-baseline-check.md" \
+  "docs/plans/2026-06-12-alexa-speech-output-validation.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
+done
+
+for speech_contract in \
+  "function normalizeSpeechOutput(optionsParam)" \
+  "Invalid speech output: expected a string or options object" \
+  "Invalid speech output: type must be PlainText or SSML" \
+  "Invalid speech output: speech must be a non-empty string"; do
+  if ! grep -Fq "$speech_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "Alexa speech output validation must keep contract: $speech_contract" >&2
+    exit 1
+  fi
+done
+
+for response_test in \
+  "response helper accepts explicit PlainText and SSML speech" \
+  "missing reprompt speech fails before returning an Alexa response" \
+  "blank reprompt speech fails before returning an Alexa response"; do
+  if ! grep -Fq "$response_test" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep response validation case: $response_test" >&2
+    exit 1
+  fi
 done
 
 WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"

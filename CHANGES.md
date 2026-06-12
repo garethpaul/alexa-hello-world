@@ -1,5 +1,13 @@
 # Changes
 
+## 2026-06-12
+
+- Validated primary and reprompt speech before constructing Alexa responses.
+- Preserved string, `PlainText`, and `SSML` output forms while rejecting
+  missing, blank, non-string, and unsupported values with explicit `Error`
+  objects.
+- Added response-helper regression coverage and baseline contracts.
+
 ## 2026-06-10
 
 1. Stopped reflecting unsupported Alexa request types and intent names into

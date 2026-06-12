@@ -183,18 +183,54 @@ var Response = function (context, session) {
   this._session = session;
 };
 
-function createSpeechObject(optionsParam) {
-  if (optionsParam && optionsParam.type === 'SSML') {
-    return {
-      type: optionsParam.type,
-      ssml: optionsParam.speech
-    };
+function normalizeSpeechOutput(optionsParam) {
+  var type;
+  var speech;
+
+  if (typeof optionsParam === 'string') {
+    type = AlexaSkill.speechOutputType.PLAIN_TEXT;
+    speech = optionsParam;
+  } else if (
+    optionsParam !== null &&
+    typeof optionsParam === 'object' &&
+    !Array.isArray(optionsParam)
+  ) {
+    type = optionsParam.type || AlexaSkill.speechOutputType.PLAIN_TEXT;
+    speech = optionsParam.speech;
   } else {
+    throw new Error(
+      'Invalid speech output: expected a string or options object'
+    );
+  }
+
+  if (
+    type !== AlexaSkill.speechOutputType.PLAIN_TEXT &&
+    type !== AlexaSkill.speechOutputType.SSML
+  ) {
+    throw new Error('Invalid speech output: type must be PlainText or SSML');
+  }
+
+  if (!isNonEmptyString(speech)) {
+    throw new Error('Invalid speech output: speech must be a non-empty string');
+  }
+
+  return { type: type, speech: speech };
+}
+
+function createSpeechObject(optionsParam) {
+  var options = normalizeSpeechOutput(optionsParam);
+
+  if (options.type === AlexaSkill.speechOutputType.SSML) {
     return {
-      type: optionsParam.type || 'PlainText',
-      text: optionsParam.speech || optionsParam
+      type: options.type,
+      ssml: options.speech
     };
   }
+
+  return {
+    type: options.type,
+    text: options.speech
+  };
 }
 
 Response.prototype = (function () {
@@ -203,7 +239,7 @@ Response.prototype = (function () {
       outputSpeech: createSpeechObject(options.output),
       shouldEndSession: options.shouldEndSession
     };
-    if (options.reprompt) {
+    if (hasOwn(options, 'reprompt')) {
       alexaResponse.reprompt = {
         outputSpeech: createSpeechObject(options.reprompt)
       };

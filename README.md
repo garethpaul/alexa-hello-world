@@ -98,6 +98,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
   dispatch, so crafted objects cannot coerce into valid handler names.
 - Rejected dispatch names are not included in failure diagnostics or logs,
   preventing embedded control characters from forging log entries.
+- Primary and reprompt speech are validated before response construction.
+  Supported output is a non-empty string or a `PlainText`/`SSML` options
+  object; malformed output fails before `context.succeed` receives a payload.
 
 ## Security and Privacy Notes
 
@@ -133,6 +136,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   dispatch-key string validation.
 - See `docs/plans/2026-06-09-scripted-baseline-check.md` for the scripted
   repository baseline guard.
+- See `docs/plans/2026-06-12-alexa-speech-output-validation.md` for response
+  speech validation and regression coverage.
 
 ## Contributing
 
