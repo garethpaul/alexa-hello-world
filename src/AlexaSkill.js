@@ -12,6 +12,18 @@ function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+function hasSsmlSpeakEnvelope(speech) {
+  var trimmedSpeech = speech.trim();
+  var openingTag = trimmedSpeech.match(/^<speak(?:\s[^>]*)?>/);
+
+  if (!openingTag || !trimmedSpeech.endsWith('</speak>')) {
+    return false;
+  }
+
+  var body = trimmedSpeech.slice(openingTag[0].length, -'</speak>'.length);
+  return !/<\/?speak(?:\s|>)/.test(body);
+}
+
 function validateEvent(event) {
   if (
     !event ||
@@ -212,6 +224,13 @@ function normalizeSpeechOutput(optionsParam) {
 
   if (!isNonEmptyString(speech)) {
     throw new Error('Invalid speech output: speech must be a non-empty string');
+  }
+
+  if (
+    type === AlexaSkill.speechOutputType.SSML &&
+    !hasSsmlSpeakEnvelope(speech)
+  ) {
+    throw new Error('Invalid speech output: SSML must use a speak envelope');
   }
 
   return { type: type, speech: speech };

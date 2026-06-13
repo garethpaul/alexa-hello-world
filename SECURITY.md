@@ -37,6 +37,8 @@ Helpful reports include:
 - Primary and reprompt speech must be validated before response construction;
   unsupported types and missing, blank, or non-string speech fail before
   `context.succeed` receives a payload.
+- The shared SSML envelope check requires primary output and reprompts to use a
+  trimmed `<speak>` root before caller-provided markup reaches Alexa.
 - Top-level Alexa execution logs must remain generic. Caught `Error` objects are
   passed unchanged to Lambda failure handling without duplicating their message
   or stack into routine logs.

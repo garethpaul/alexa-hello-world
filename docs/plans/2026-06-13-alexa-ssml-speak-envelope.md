@@ -1,6 +1,6 @@
 # Alexa SSML Speak Envelope
 
-Status: Planned
+Status: Completed
 
 ## Context
 
@@ -60,8 +60,8 @@ audit/diff/artifact/secret scans, and exact-head hosted checks.
 ## Verification Plan
 
 - Run focused `node --test` cases for primary and reprompt SSML envelopes.
-- Prove opening-tag, closing-tag, delimiter, shared-normalizer, test, docs, and
-  completed-plan mutations fail.
+- Prove hostile mutations covering the opening tag, closing tag, single-root
+  delimiter, shared normalizer, tests, docs, and completed-plan status fail.
 - Run `make check` locally and in an isolated external directory with the
   locked dependency tree.
 - Run `npm audit --omit=dev`, `git diff --check`, generated-artifact inspection,
@@ -74,3 +74,20 @@ audit/diff/artifact/secret scans, and exact-head hosted checks.
   https://developer.amazon.com/en-US/docs/custom-skills/speech-synthesis-markup-language-ssml-reference.html
 - Amazon Alexa Skills Kit, Request and Response JSON Reference:
   https://www.developer.amazon.com/docs/custom-skills/request-and-response-json-reference.html
+
+## Verification
+
+- The focused runtime suite passed after a hostile multi-root case exposed and
+  drove a fix for a permissive first-to-last-tag regex.
+- All 44 handler tests pass, including valid basic/attributed envelopes,
+  deceptive opening and closing prefixes, alternate roots, missing closing
+  tags, multiple roots, and invalid reprompts.
+- Nine focused hostile mutations were rejected across opening, closing,
+  single-root, shared-normalizer, stable-error, reprompt-test, guidance, and
+  completed-plan contracts.
+- Local and isolated external-directory `npm ci` plus `make check` passed
+  ESLint, Prettier, all 44 tests, Node syntax builds, and the portable baseline.
+- `npm audit --omit=dev` reported zero vulnerabilities. The external baseline
+  emitted only its expected non-git tracked-file probe warning.
+- `git diff --check`, generated-artifact inspection, and credential-shaped
+  added-line scans passed. Hosted exact-head evidence remains pending push.

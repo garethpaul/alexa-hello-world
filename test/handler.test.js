@@ -168,6 +168,50 @@ test('response helper accepts explicit PlainText and SSML speech', async () => {
   });
 });
 
+test('SSML speech accepts a trimmed speak envelope with opening attributes', async () => {
+  const result = await invokeResponse({
+    type: 'SSML',
+    speech: '  <speak xml:lang="en-US">Hello</speak>  '
+  });
+
+  assert.equal(result.type, 'succeed');
+  assert.equal(
+    result.response.response.outputSpeech.ssml,
+    '  <speak xml:lang="en-US">Hello</speak>  '
+  );
+});
+
+for (const [name, speech] of [
+  ['plain text mislabeled as SSML', 'Hello'],
+  ['alternate SSML root', '<emphasis>Hello</emphasis>'],
+  ['missing speak close tag', '<speak>Hello'],
+  ['deceptive speak opening prefix', '<speaker>Hello</speak>'],
+  ['deceptive speak closing prefix', '<speak>Hello</speaker>'],
+  ['content after speak root', '<speak>Hello</speak><speak>Again</speak>']
+]) {
+  test(`${name} fails before returning an Alexa response`, async () => {
+    const result = await invokeResponse({ type: 'SSML', speech });
+
+    assertFailure(
+      result,
+      'Invalid speech output: SSML must use a speak envelope'
+    );
+    assert.doesNotMatch(result.error.message, /Hello|emphasis|speaker/);
+  });
+}
+
+test('invalid SSML reprompt fails through the shared envelope validation', async () => {
+  const result = await invokeAskResponse('Valid primary speech', {
+    type: 'SSML',
+    speech: '<speak>Missing close'
+  });
+
+  assertFailure(
+    result,
+    'Invalid speech output: SSML must use a speak envelope'
+  );
+});
+
 for (const [name, output, message] of [
   [
     'missing speech output',

@@ -37,6 +37,8 @@ Priority:
   Lambda failures or logs
 - Return stack-bearing `Error` objects for validation and dispatch failures
 - Validate primary and reprompt speech before constructing Alexa responses
+- Keep direct-response SSML speak envelopes validated in the shared primary
+  and reprompt normalization path
 - Keep AWS setup steps explicit for first-time users
 
 Next priorities:

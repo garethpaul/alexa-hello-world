@@ -45,6 +45,7 @@ for path in \
   "docs/plans/2026-06-12-alexa-speech-output-validation.md" \
   "docs/plans/2026-06-13-alexa-exception-log-redaction.md" \
   "docs/plans/2026-06-13-alexa-lambda-skill-id-required.md" \
+  "docs/plans/2026-06-13-alexa-ssml-speak-envelope.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
@@ -87,9 +88,15 @@ done
 
 for speech_contract in \
   "function normalizeSpeechOutput(optionsParam)" \
+  "function hasSsmlSpeakEnvelope(speech)" \
+  "trimmedSpeech.match(/^<speak" \
+  "trimmedSpeech.endsWith('</speak>')" \
+  "return !/<\\/?speak(?:\\s|>)/.test(body)" \
   "Invalid speech output: expected a string or options object" \
   "Invalid speech output: type must be PlainText or SSML" \
-  "Invalid speech output: speech must be a non-empty string"; do
+  "Invalid speech output: speech must be a non-empty string" \
+  "Invalid speech output: SSML must use a speak envelope" \
+  "!hasSsmlSpeakEnvelope(speech)"; do
   if ! grep -Fq "$speech_contract" "$ALEXA_SKILL"; then
     printf '%s\n' "Alexa speech output validation must keep contract: $speech_contract" >&2
     exit 1
@@ -98,6 +105,10 @@ done
 
 for response_test in \
   "response helper accepts explicit PlainText and SSML speech" \
+  "SSML speech accepts a trimmed speak envelope with opening attributes" \
+  "deceptive speak opening prefix" \
+  "deceptive speak closing prefix" \
+  "invalid SSML reprompt fails through the shared envelope validation" \
   "missing reprompt speech fails before returning an Alexa response" \
   "blank reprompt speech fails before returning an Alexa response"; do
   if ! grep -Fq "$response_test" "$ROOT_DIR/test/handler.test.js"; then
@@ -326,7 +337,8 @@ for plan in \
   "$DOCS_PLANS/2026-06-09-alexa-dispatch-key-type-validation.md" \
   "$DOCS_PLANS/2026-06-09-scripted-baseline-check.md" \
   "$DOCS_PLANS/2026-06-13-alexa-exception-log-redaction.md" \
-  "$DOCS_PLANS/2026-06-13-alexa-lambda-skill-id-required.md"; do
+  "$DOCS_PLANS/2026-06-13-alexa-lambda-skill-id-required.md" \
+  "$DOCS_PLANS/2026-06-13-alexa-ssml-speak-envelope.md"; do
   if ! grep -Fq "make check" "$plan"; then
     printf '%s\n' "$plan must document make check verification." >&2
     exit 1
@@ -342,5 +354,23 @@ if ! grep -Fq "hostile mutations" "$DOCS_PLANS/2026-06-13-alexa-lambda-skill-id-
   printf '%s\n' "Lambda skill-ID plan must document hostile mutations." >&2
   exit 1
 fi
+
+if ! grep -Fq "hostile mutations" "$DOCS_PLANS/2026-06-13-alexa-ssml-speak-envelope.md"; then
+  printf '%s\n' "Alexa SSML envelope plan must document hostile mutations." >&2
+  exit 1
+fi
+
+for ssml_doc_contract in \
+  "$README|<speak>\` envelope" \
+  "$SECURITY|SSML envelope" \
+  "$ROOT_DIR/VISION.md|SSML speak envelopes" \
+  "$CHANGES|SSML output"; do
+  ssml_doc=${ssml_doc_contract%%|*}
+  ssml_contract=${ssml_doc_contract#*|}
+  if ! grep -Fq "$ssml_contract" "$ssml_doc"; then
+    printf '%s\n' "$ssml_doc must document SSML speak-envelope validation." >&2
+    exit 1
+  fi
+done
 
 printf '%s\n' "Alexa Hello World baseline checks passed."

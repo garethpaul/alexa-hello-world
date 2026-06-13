@@ -104,6 +104,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Primary and reprompt speech are validated before response construction.
   Supported output is a non-empty string or a `PlainText`/`SSML` options
   object; malformed output fails before `context.succeed` receives a payload.
+- Direct `SSML` output and reprompts must retain a trimmed `<speak>` envelope;
+  mislabeled plain text or alternate roots fail before response construction.
 
 ## Security and Privacy Notes
 
@@ -141,6 +143,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   repository baseline guard.
 - See `docs/plans/2026-06-12-alexa-speech-output-validation.md` for response
   speech validation and regression coverage.
+- See `docs/plans/2026-06-13-alexa-ssml-speak-envelope.md` for direct-response
+  SSML root-envelope validation.
 - See `docs/plans/2026-06-13-alexa-exception-log-redaction.md` for the boundary
   between generic failure logs and detailed Lambda errors.
 

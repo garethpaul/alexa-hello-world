@@ -10,6 +10,9 @@
   present while preserving optional configuration for local examples.
 - Added module-load, helper, guidance, and portable fail-closed contracts for
   deployed skill-ID authorization.
+- Required direct SSML output and reprompts to use a trimmed `<speak>` root
+  before Alexa response construction.
+- Added focused malformed-SSML regressions and mutation-sensitive contracts.
 
 ## 2026-06-12
 
