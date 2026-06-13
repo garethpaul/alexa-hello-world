@@ -173,7 +173,7 @@ AlexaSkill.prototype.execute = function (event, context) {
       new Response(context, event.session)
     );
   } catch (e) {
-    console.log('Unexpected exception ' + e);
+    console.log('Alexa request failed');
     context.fail(e);
   }
 };

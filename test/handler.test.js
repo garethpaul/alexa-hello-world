@@ -88,6 +88,18 @@ function responseHandler(output, reprompt, shouldAsk) {
   };
 }
 
+function throwingResponseHandler(error) {
+  return function (event, context) {
+    const skill = new AlexaSkill();
+    skill.eventHandlers = Object.assign({}, skill.eventHandlers, {
+      onLaunch: function () {
+        throw error;
+      }
+    });
+    skill.execute(event, context);
+  };
+}
+
 function invokeResponse(output, reprompt) {
   return invoke(
     { type: 'LaunchRequest' },
@@ -522,4 +534,22 @@ test('application id rejection logs do not include compared identifiers', async 
   assert.match(logText, /configured skill id/);
   assert.doesNotMatch(logText, /expected-private/);
   assert.doesNotMatch(logText, /other-private/);
+});
+
+test('handler exceptions retain failure details without reflecting them into logs', async () => {
+  const sensitiveError = new Error(
+    'private handler detail\nforged-exception-log'
+  );
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    { captureLogs: true, handler: throwingResponseHandler(sensitiveError) }
+  );
+  const logText = result.logs.join('\n');
+
+  assert.equal(result.type, 'fail');
+  assert.equal(result.error, sensitiveError);
+  assert.match(result.error.stack, /^Error: private handler detail/);
+  assert.match(logText, /Alexa request failed/);
+  assert.doesNotMatch(logText, /private handler detail/);
+  assert.doesNotMatch(logText, /forged-exception-log/);
 });

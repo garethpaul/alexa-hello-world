@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-13
+
+- Replaced exception-derived top-level Alexa logs with a stable generic failure
+  message while preserving the original `Error` for Lambda failure handling.
+- Added regression and portable baseline coverage for handler-provided error
+  messages and newline-forged log content.
+
 ## 2026-06-12
 
 - Validated primary and reprompt speech before constructing Alexa responses.

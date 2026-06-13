@@ -3,6 +3,8 @@ set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 README="$ROOT_DIR/README.md"
+SECURITY="$ROOT_DIR/SECURITY.md"
+CHANGES="$ROOT_DIR/CHANGES.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 PACKAGE_JSON="$ROOT_DIR/package.json"
 GITIGNORE="$ROOT_DIR/.gitignore"
@@ -41,6 +43,7 @@ for path in \
   "docs/plans/2026-06-09-alexa-dispatch-key-type-validation.md" \
   "docs/plans/2026-06-09-scripted-baseline-check.md" \
   "docs/plans/2026-06-12-alexa-speech-output-validation.md" \
+  "docs/plans/2026-06-13-alexa-exception-log-redaction.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
@@ -167,6 +170,52 @@ if ! grep -Fq "result.error instanceof Error" "$ROOT_DIR/test/handler.test.js"; 
   exit 1
 fi
 
+if [ "$(grep -Fc "console.log('Alexa request failed');" "$ALEXA_SKILL")" -ne 1 ]; then
+  printf '%s\n' "AlexaSkill must keep exactly one generic top-level request failure log." >&2
+  exit 1
+fi
+if [ "$(grep -Fc "context.fail(e);" "$ALEXA_SKILL")" -ne 1 ]; then
+  printf '%s\n' "AlexaSkill must pass the caught Error exactly once to Lambda failure handling." >&2
+  exit 1
+fi
+for reflected_exception in \
+  "'Unexpected exception ' + e" \
+  ' + e' \
+  'e.message' \
+  'e.stack' \
+  'String(e)' \
+  'JSON.stringify(e)' \
+  'console.log(e' \
+  'console.error(e' \
+  '${e}'; do
+  if grep -Fq "$reflected_exception" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill logs must not include exception-derived text: $reflected_exception" >&2
+    exit 1
+  fi
+done
+for exception_test_contract in \
+  "handler exceptions retain failure details without reflecting them into logs" \
+  "assert.equal(result.error, sensitiveError);" \
+  "assert.doesNotMatch(logText, /private handler detail/);" \
+  "assert.doesNotMatch(logText, /forged-exception-log/);"; do
+  if ! grep -Fq "$exception_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep exception log-redaction contract: $exception_test_contract" >&2
+    exit 1
+  fi
+done
+
+for exception_doc_contract in \
+  "$README|Top-level handler failures use a generic log message" \
+  "$SECURITY|Top-level Alexa execution logs must remain generic" \
+  "$CHANGES|exception-derived top-level Alexa logs with a stable generic failure"; do
+  exception_doc=${exception_doc_contract%%|*}
+  exception_contract=${exception_doc_contract#*|}
+  if ! grep -Fq "$exception_contract" "$exception_doc"; then
+    printf '%s\n' "$exception_doc must keep exception log-redaction guidance: $exception_contract" >&2
+    exit 1
+  fi
+done
+
 for reflected_failure in \
   "Unsupported intent =" \
   "Unsupported request type ="; do
@@ -239,11 +288,17 @@ fi
 for plan in \
   "$DOCS_PLANS/2026-06-08-alexa-check-wrapper.md" \
   "$DOCS_PLANS/2026-06-09-alexa-dispatch-key-type-validation.md" \
-  "$DOCS_PLANS/2026-06-09-scripted-baseline-check.md"; do
+  "$DOCS_PLANS/2026-06-09-scripted-baseline-check.md" \
+  "$DOCS_PLANS/2026-06-13-alexa-exception-log-redaction.md"; do
   if ! grep -Fq "make check" "$plan"; then
     printf '%s\n' "$plan must document make check verification." >&2
     exit 1
   fi
 done
+
+if ! grep -Fq "hostile mutations" "$DOCS_PLANS/2026-06-13-alexa-exception-log-redaction.md"; then
+  printf '%s\n' "Alexa exception log-redaction plan must record hostile mutations." >&2
+  exit 1
+fi
 
 printf '%s\n' "Alexa Hello World baseline checks passed."

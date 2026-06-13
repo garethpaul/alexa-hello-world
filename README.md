@@ -92,6 +92,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   are treated as unset.
 - Routine handler logs avoid raw Alexa request IDs, session IDs, and configured
   or incoming application IDs.
+- Top-level handler failures use a generic log message while preserving the
+  original stack-bearing `Error` for Lambda failure handling.
 - Alexa `session.application.applicationId` values must be non-empty strings
   before optional skill-id comparison or request dispatch.
 - Alexa `request.type` and `intent.name` values must be non-empty strings before
@@ -138,6 +140,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   repository baseline guard.
 - See `docs/plans/2026-06-12-alexa-speech-output-validation.md` for response
   speech validation and regression coverage.
+- See `docs/plans/2026-06-13-alexa-exception-log-redaction.md` for the boundary
+  between generic failure logs and detailed Lambda errors.
 
 ## Contributing
 
