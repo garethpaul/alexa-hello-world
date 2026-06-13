@@ -99,6 +99,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   before optional skill-id comparison or request dispatch.
 - Alexa `request.type` and `intent.name` values must be non-empty strings before
   dispatch, so crafted objects cannot coerce into valid handler names.
+- Alexa `request.timestamp` must be a valid ISO 8601 UTC value inside the
+  inclusive 150-second freshness window before authorization or dispatch.
 - Rejected dispatch names are not included in failure diagnostics or logs,
   preventing embedded control characters from forging log entries.
 - Primary and reprompt speech are validated before response construction.

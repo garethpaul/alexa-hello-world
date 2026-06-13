@@ -58,6 +58,8 @@
 - Alexa `session.application.applicationId` must be a non-empty string before
   skill-id validation or request dispatch.
 - Alexa `request.type` and `intent.name` values must be non-empty strings before dispatch, so crafted objects cannot coerce into valid handler names.
+- Alexa `request.timestamp` must be an ISO 8601 UTC string inside the inclusive
+  150-second freshness window before authorization or dispatch.
 - Unsupported request types and intent names fail with generic, stack-bearing
   `Error` objects and must not be reflected into logs or Lambda failure values.
 - Primary and reprompt speech must be non-empty strings or `PlainText`/`SSML`

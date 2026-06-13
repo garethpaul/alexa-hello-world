@@ -1,7 +1,11 @@
 'use strict';
 
-function AlexaSkill(appId) {
+var REQUEST_TIMESTAMP_TOLERANCE_MS = 150 * 1000;
+var ISO_8601_UTC_PATTERN = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d+)?Z$/;
+
+function AlexaSkill(appId, now) {
   this._appId = appId;
+  this._now = typeof now === 'function' ? now : Date.now;
 }
 
 function hasOwn(object, property) {
@@ -24,7 +28,29 @@ function hasSsmlSpeakEnvelope(speech) {
   return !/<\/?speak(?:\s|>)/.test(body);
 }
 
-function validateEvent(event) {
+function parseRequestTimestamp(timestamp) {
+  var match = timestamp.match(ISO_8601_UTC_PATTERN);
+
+  if (!match) {
+    return undefined;
+  }
+
+  var wholeSecondTimestamp = match[1] + '.000Z';
+  var wholeSecondMilliseconds = Date.parse(wholeSecondTimestamp);
+  var timestampMilliseconds = Date.parse(timestamp);
+
+  if (
+    !Number.isFinite(wholeSecondMilliseconds) ||
+    !Number.isFinite(timestampMilliseconds) ||
+    new Date(wholeSecondMilliseconds).toISOString() !== wholeSecondTimestamp
+  ) {
+    return undefined;
+  }
+
+  return timestampMilliseconds;
+}
+
+function validateEvent(event, nowMilliseconds) {
   if (
     !event ||
     !event.session ||
@@ -49,6 +75,33 @@ function validateEvent(event) {
   if (!isNonEmptyString(event.request.type)) {
     throw new Error(
       'Invalid Alexa event: request.type must be a non-empty string'
+    );
+  }
+
+  if (!hasOwn(event.request, 'timestamp')) {
+    throw new Error('Invalid Alexa event: missing request.timestamp');
+  }
+
+  if (!isNonEmptyString(event.request.timestamp)) {
+    throw new Error(
+      'Invalid Alexa event: request.timestamp must be a non-empty string'
+    );
+  }
+
+  var requestTimestamp = parseRequestTimestamp(event.request.timestamp);
+  if (requestTimestamp === undefined) {
+    throw new Error(
+      'Invalid Alexa event: request.timestamp must be an ISO 8601 UTC string'
+    );
+  }
+
+  if (
+    !Number.isFinite(nowMilliseconds) ||
+    Math.abs(nowMilliseconds - requestTimestamp) >
+      REQUEST_TIMESTAMP_TOLERANCE_MS
+  ) {
+    throw new Error(
+      'Invalid Alexa event: request.timestamp is outside the allowed freshness window'
     );
   }
 }
@@ -150,7 +203,7 @@ AlexaSkill.prototype.intentHandlers = {};
 
 AlexaSkill.prototype.execute = function (event, context) {
   try {
-    validateEvent(event);
+    validateEvent(event, this._now());
 
     console.log('session applicationId validated');
 

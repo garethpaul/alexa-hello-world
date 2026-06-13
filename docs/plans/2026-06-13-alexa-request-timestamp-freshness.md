@@ -1,6 +1,6 @@
 # Alexa Request Timestamp Freshness
 
-Status: Planned
+Status: Completed
 
 ## Context
 
@@ -88,4 +88,19 @@ exact-head hosted checks.
 
 ## Verification
 
-- Pending implementation.
+- The focused timestamp suite and full handler suite pass with 52 tests,
+  including missing, malformed, high-precision fractional, exact-boundary,
+  stale, future, ordering, and non-reflective failure cases.
+- Ten isolated hostile mutations were rejected across tolerance expansion,
+  one-sided comparison, exclusive boundaries, parser bypass, validation
+  bypass, clock injection, regression tests, README/security guidance, and
+  completed-plan status.
+- A fresh bounded `npm ci` reported zero vulnerabilities and the pinned lint,
+  format, test, and syntax-build commands passed.
+- Local and isolated external-directory `make check` passed ESLint, Prettier,
+  all 52 tests, Node syntax builds, and the portable baseline. The external
+  baseline emitted only its expected non-git tracked-file probe warning.
+- `npm audit --omit=dev` reported zero vulnerabilities. Final
+  diff/artifact/secret inspection passed; live Alexa, Lambda, IAM, trigger,
+  invocation, and CloudWatch validation were not run.
+- Hosted exact-head evidence remains pending push.

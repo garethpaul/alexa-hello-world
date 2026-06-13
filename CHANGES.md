@@ -13,6 +13,10 @@
 - Required direct SSML output and reprompts to use a trimmed `<speak>` root
   before Alexa response construction.
 - Added focused malformed-SSML regressions and mutation-sensitive contracts.
+- Required ISO 8601 UTC Alexa request timestamps inside an inclusive
+  150-second freshness window before authorization or dispatch.
+- Added deterministic boundary, stale/future, malformed-value, ordering, and
+  non-reflection coverage for request timestamp validation.
 
 ## 2026-06-12
 

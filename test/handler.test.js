@@ -76,8 +76,18 @@ function invoke(request, options = {}) {
       },
       attributes: {}
     },
-    request: Object.assign({ requestId: 'request-id' }, request)
+    request: Object.assign(
+      {
+        requestId: 'request-id',
+        timestamp: new Date().toISOString()
+      },
+      request
+    )
   };
+
+  if (options.omitTimestamp) {
+    delete event.request.timestamp;
+  }
 
   return invokeEvent(event, options);
 }
@@ -89,9 +99,9 @@ function assertFailure(result, message) {
   assert.match(result.error.stack, /^Error: /);
 }
 
-function responseHandler(output, reprompt, shouldAsk) {
+function responseHandler(output, reprompt, shouldAsk, now) {
   return function (event, context) {
-    const skill = new AlexaSkill();
+    const skill = new AlexaSkill(undefined, now);
     skill.eventHandlers = Object.assign({}, skill.eventHandlers, {
       onLaunch: function (launchRequest, session, response) {
         if (shouldAsk) {
@@ -474,12 +484,151 @@ test('malformed session attributes are reset before responses are built', async 
     },
     request: {
       requestId: 'request-id',
+      timestamp: new Date().toISOString(),
       type: 'LaunchRequest'
     }
   });
 
   assert.equal(result.type, 'succeed');
   assert.deepEqual(result.response.sessionAttributes, {});
+});
+
+test('Alexa requests require a timestamp', async () => {
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    { omitTimestamp: true }
+  );
+
+  assertFailure(result, 'Invalid Alexa event: missing request.timestamp');
+});
+
+test('Alexa request timestamps must be non-empty strings', async () => {
+  for (const timestamp of ['', '   ', 42, {}, []]) {
+    const result = await invoke({ type: 'LaunchRequest', timestamp });
+
+    assertFailure(
+      result,
+      'Invalid Alexa event: request.timestamp must be a non-empty string'
+    );
+  }
+});
+
+test('Alexa request timestamps must be valid ISO 8601 UTC values', async () => {
+  for (const timestamp of [
+    'not-a-date',
+    '2026-06-13 12:00:00Z',
+    '2026-06-13T12:00:00+00:00',
+    '2026-02-30T12:00:00Z',
+    '2026-06-13T12:00:00.Z'
+  ]) {
+    const result = await invoke({ type: 'LaunchRequest', timestamp });
+
+    assertFailure(
+      result,
+      'Invalid Alexa event: request.timestamp must be an ISO 8601 UTC string'
+    );
+  }
+});
+
+test('Alexa request timestamps accept fractional-second precision', async () => {
+  const now = Date.parse('2026-06-13T12:00:00.123Z');
+  const result = await invoke(
+    {
+      type: 'LaunchRequest',
+      timestamp: '2026-06-13T12:00:00.123456Z'
+    },
+    {
+      handler: responseHandler('fresh request', undefined, false, () => now)
+    }
+  );
+
+  assert.equal(result.type, 'succeed');
+  assert.equal(result.response.response.outputSpeech.text, 'fresh request');
+});
+
+test('Alexa request timestamps accept both 150-second freshness boundaries', async () => {
+  const now = Date.parse('2026-06-13T12:00:00.000Z');
+  const handlerAtNow = responseHandler(
+    'fresh request',
+    undefined,
+    false,
+    () => now
+  );
+
+  for (const offset of [-150000, 150000]) {
+    const result = await invoke(
+      {
+        type: 'LaunchRequest',
+        timestamp: new Date(now + offset).toISOString()
+      },
+      { handler: handlerAtNow }
+    );
+
+    assert.equal(result.type, 'succeed');
+    assert.equal(result.response.response.outputSpeech.text, 'fresh request');
+  }
+});
+
+test('Alexa request timestamps reject stale and excessive future values', async () => {
+  const now = Date.parse('2026-06-13T12:00:00.000Z');
+  const handlerAtNow = responseHandler(
+    'fresh request',
+    undefined,
+    false,
+    () => now
+  );
+
+  for (const offset of [-150001, 150001]) {
+    const result = await invoke(
+      {
+        type: 'LaunchRequest',
+        timestamp: new Date(now + offset).toISOString()
+      },
+      { handler: handlerAtNow }
+    );
+
+    assertFailure(
+      result,
+      'Invalid Alexa event: request.timestamp is outside the allowed freshness window'
+    );
+  }
+});
+
+test('timestamp failures do not reflect caller input into logs or failures', async () => {
+  const timestamp = 'forged-timestamp\nforged-timestamp-log';
+  const result = await invoke(
+    { type: 'LaunchRequest', timestamp },
+    { captureLogs: true }
+  );
+  const logText = result.logs.join('\n');
+
+  assertFailure(
+    result,
+    'Invalid Alexa event: request.timestamp must be an ISO 8601 UTC string'
+  );
+  assert.doesNotMatch(result.error.message, /forged-timestamp/);
+  assert.doesNotMatch(logText, /forged-timestamp/);
+});
+
+test('timestamp freshness is validated before application id authorization', async () => {
+  const configuredHandler = loadHandlerWithSkillId(
+    'amzn1.echo-sdk-ams.app.expected'
+  );
+  const result = await invoke(
+    {
+      type: 'LaunchRequest',
+      timestamp: '2000-01-01T00:00:00.000Z'
+    },
+    {
+      applicationId: 'amzn1.echo-sdk-ams.app.other',
+      handler: configuredHandler
+    }
+  );
+
+  assertFailure(
+    result,
+    'Invalid Alexa event: request.timestamp is outside the allowed freshness window'
+  );
 });
 
 test('malformed intent requests fail with a clear message', async () => {

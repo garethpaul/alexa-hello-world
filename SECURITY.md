@@ -34,6 +34,10 @@ Helpful reports include:
 - Dependency manifests detected: package.json, package-lock.json. Dependency updates should preserve lockfiles when present and avoid introducing packages without a clear maintenance reason.
 - Alexa request dispatch should reject non-string handler keys before lookup so
   crafted objects cannot coerce into supported request or intent names.
+- Alexa events must carry an ISO 8601 UTC `request.timestamp` inside the
+  inclusive 150-second freshness window. This defense-in-depth check does not
+  replace Alexa signature verification for custom web services or Lambda
+  trigger authorization.
 - Primary and reprompt speech must be validated before response construction;
   unsupported types and missing, blank, or non-string speech fail before
   `context.succeed` receives a payload.

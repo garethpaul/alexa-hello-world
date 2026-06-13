@@ -45,6 +45,7 @@ for path in \
   "docs/plans/2026-06-12-alexa-speech-output-validation.md" \
   "docs/plans/2026-06-13-alexa-exception-log-redaction.md" \
   "docs/plans/2026-06-13-alexa-lambda-skill-id-required.md" \
+  "docs/plans/2026-06-13-alexa-request-timestamp-freshness.md" \
   "docs/plans/2026-06-13-alexa-ssml-speak-envelope.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
@@ -272,6 +273,57 @@ for reflected_failure in \
   fi
 done
 
+for timestamp_contract in \
+  "var REQUEST_TIMESTAMP_TOLERANCE_MS = 150 * 1000;" \
+  "var ISO_8601_UTC_PATTERN =" \
+  "Math.abs(nowMilliseconds - requestTimestamp)" \
+  "validateEvent(event, this._now());"; do
+  if ! grep -Fq "$timestamp_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep request timestamp contract: $timestamp_contract" >&2
+    exit 1
+  fi
+done
+
+if ! awk '
+  /Math\.abs\(nowMilliseconds - requestTimestamp\) >$/ {
+    getline
+    if ($0 ~ /^[[:space:]]+REQUEST_TIMESTAMP_TOLERANCE_MS$/) {
+      found = 1
+    }
+  }
+  END { exit(found ? 0 : 1) }
+' "$ALEXA_SKILL"; then
+  printf '%s\n' "AlexaSkill must keep an inclusive timestamp freshness boundary." >&2
+  exit 1
+fi
+
+for timestamp_test_contract in \
+  "Alexa requests require a timestamp" \
+  "Alexa request timestamps must be valid ISO 8601 UTC values" \
+  "Alexa request timestamps accept fractional-second precision" \
+  "Alexa request timestamps accept both 150-second freshness boundaries" \
+  "Alexa request timestamps reject stale and excessive future values" \
+  "timestamp failures do not reflect caller input into logs or failures" \
+  "timestamp freshness is validated before application id authorization"; do
+  if ! grep -Fq "$timestamp_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep request timestamp contract: $timestamp_test_contract" >&2
+    exit 1
+  fi
+done
+
+for timestamp_doc_contract in \
+  "$README|150-second freshness window" \
+  "$SECURITY|150-second freshness window" \
+  "$ROOT_DIR/VISION.md|150-second request timestamp freshness window" \
+  "$CHANGES|150-second freshness window"; do
+  timestamp_doc=${timestamp_doc_contract%%|*}
+  timestamp_contract=${timestamp_doc_contract#*|}
+  if ! grep -Fq "$timestamp_contract" "$timestamp_doc"; then
+    printf '%s\n' "$timestamp_doc must document request timestamp freshness." >&2
+    exit 1
+  fi
+done
+
 for package_contract in \
   '"type": "commonjs"' \
   '"node": ">=20.19"' \
@@ -338,6 +390,7 @@ for plan in \
   "$DOCS_PLANS/2026-06-09-scripted-baseline-check.md" \
   "$DOCS_PLANS/2026-06-13-alexa-exception-log-redaction.md" \
   "$DOCS_PLANS/2026-06-13-alexa-lambda-skill-id-required.md" \
+  "$DOCS_PLANS/2026-06-13-alexa-request-timestamp-freshness.md" \
   "$DOCS_PLANS/2026-06-13-alexa-ssml-speak-envelope.md"; do
   if ! grep -Fq "make check" "$plan"; then
     printf '%s\n' "$plan must document make check verification." >&2
@@ -357,6 +410,11 @@ fi
 
 if ! grep -Fq "hostile mutations" "$DOCS_PLANS/2026-06-13-alexa-ssml-speak-envelope.md"; then
   printf '%s\n' "Alexa SSML envelope plan must document hostile mutations." >&2
+  exit 1
+fi
+
+if ! grep -Fq "hostile mutations" "$DOCS_PLANS/2026-06-13-alexa-request-timestamp-freshness.md"; then
+  printf '%s\n' "Alexa timestamp freshness plan must document hostile mutations." >&2
   exit 1
 fi
 
