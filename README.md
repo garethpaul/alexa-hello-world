@@ -87,9 +87,10 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Configuration and Secrets
 
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
-- Set `ALEXA_SKILL_ID` in deployed environments that should reject requests
-  from unexpected Alexa skill application IDs. Values are trimmed; blank values
-  are treated as unset.
+- Local examples may omit `ALEXA_SKILL_ID`, but AWS Lambda initialization
+  fails closed when the runtime-provided `AWS_LAMBDA_FUNCTION_NAME` is present
+  and the skill ID is missing or blank. Configured values are trimmed before
+  application-ID comparison.
 - Routine handler logs avoid raw Alexa request IDs, session IDs, and configured
   or incoming application IDs.
 - Top-level handler failures use a generic log message while preserving the

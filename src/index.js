@@ -18,7 +18,20 @@ function configuredSkillId(value) {
   return skillId.length > 0 ? skillId : undefined;
 }
 
-var APP_ID = configuredSkillId(process.env.ALEXA_SKILL_ID);
+function requiredSkillId(value, lambdaFunctionName) {
+  var skillId = configuredSkillId(value);
+
+  if (configuredSkillId(lambdaFunctionName) && !skillId) {
+    throw new Error('ALEXA_SKILL_ID must be configured in AWS Lambda');
+  }
+
+  return skillId;
+}
+
+var APP_ID = requiredSkillId(
+  process.env.ALEXA_SKILL_ID,
+  process.env.AWS_LAMBDA_FUNCTION_NAME
+);
 
 /**
  * The AlexaSkill prototype and helper functions
@@ -90,3 +103,4 @@ exports.handler = function (event, context) {
 };
 
 exports.configuredSkillId = configuredSkillId;
+exports.requiredSkillId = requiredSkillId;

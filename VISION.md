@@ -21,9 +21,9 @@ Priority:
 - Preserve local tests with `npm test`
 - Keep `make check` and `scripts/check-baseline.sh` green before changes are
   pushed
-- Support optional `ALEXA_SKILL_ID` validation for safer deployments
-- Treat blank `ALEXA_SKILL_ID` values as unset so misconfigured environments
-  remain diagnosable
+- Permit optional `ALEXA_SKILL_ID` validation for local examples
+- Require a non-empty `ALEXA_SKILL_ID` when AWS Lambda runtime markers are
+  present so deployed authorization fails closed
 - Keep malformed Alexa event failures explicit and locally testable
 - Require Alexa application IDs to be non-empty strings before dispatch
 - Reset malformed Alexa session attributes before building responses
@@ -63,9 +63,9 @@ Canonical security policy and reporting:
 
 - [`SECURITY.md`](SECURITY.md)
 
-The Lambda can optionally reject requests from unexpected Alexa skill
-application IDs. Deployments should set `ALEXA_SKILL_ID` when they are intended
-to serve only one skill.
+The Lambda rejects initialization when `ALEXA_SKILL_ID` is missing or blank,
+then rejects requests carrying an unexpected Alexa skill application ID.
+Local examples outside Lambda may omit the variable.
 
 AWS credentials, Lambda deployment secrets, and skill identifiers that are not
 meant to be public should remain in the AWS console, environment variables, or

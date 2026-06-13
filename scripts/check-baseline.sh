@@ -44,9 +44,45 @@ for path in \
   "docs/plans/2026-06-09-scripted-baseline-check.md" \
   "docs/plans/2026-06-12-alexa-speech-output-validation.md" \
   "docs/plans/2026-06-13-alexa-exception-log-redaction.md" \
+  "docs/plans/2026-06-13-alexa-lambda-skill-id-required.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
+done
+
+for deployment_contract in \
+  "function requiredSkillId(value, lambdaFunctionName)" \
+  "process.env.AWS_LAMBDA_FUNCTION_NAME" \
+  "ALEXA_SKILL_ID must be configured in AWS Lambda" \
+  "exports.requiredSkillId = requiredSkillId"; do
+  if ! grep -Fq "$deployment_contract" "$ROOT_DIR/src/index.js"; then
+    printf '%s\n' "Lambda skill-ID enforcement must keep contract: $deployment_contract" >&2
+    exit 1
+  fi
+done
+
+for deployment_test in \
+  "local module loading permits a missing Alexa skill id" \
+  "Lambda requires a non-empty Alexa skill id" \
+  "Lambda module loading fails before exporting an unguarded handler" \
+  "Lambda module loading accepts a configured trimmed Alexa skill id"; do
+  if ! grep -Fq "$deployment_test" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep deployment configuration case: $deployment_test" >&2
+    exit 1
+  fi
+done
+
+for deployment_document in \
+  "$ROOT_DIR/AGENTS.md" \
+  "$README" \
+  "$SECURITY" \
+  "$ROOT_DIR/VISION.md" \
+  "$CHANGES"; do
+  if ! grep -Fq "AWS Lambda" "$deployment_document" ||
+     ! grep -Fq "ALEXA_SKILL_ID" "$deployment_document"; then
+    printf '%s\n' "$deployment_document must document deployed Alexa skill-ID enforcement." >&2
+    exit 1
+  fi
 done
 
 for speech_contract in \
@@ -270,7 +306,7 @@ found_plan=0
 for plan in "$DOCS_PLANS"/*.md; do
   [ -e "$plan" ] || continue
   found_plan=1
-  if ! grep -iq "status" "$plan" || ! grep -iq "completed" "$plan"; then
+  if ! grep -Eiq '^(##[[:space:]]+)?status:[[:space:]]+completed[[:space:]]*$' "$plan"; then
     printf '%s\n' "$plan must record completed status." >&2
     exit 1
   fi
@@ -289,7 +325,8 @@ for plan in \
   "$DOCS_PLANS/2026-06-08-alexa-check-wrapper.md" \
   "$DOCS_PLANS/2026-06-09-alexa-dispatch-key-type-validation.md" \
   "$DOCS_PLANS/2026-06-09-scripted-baseline-check.md" \
-  "$DOCS_PLANS/2026-06-13-alexa-exception-log-redaction.md"; do
+  "$DOCS_PLANS/2026-06-13-alexa-exception-log-redaction.md" \
+  "$DOCS_PLANS/2026-06-13-alexa-lambda-skill-id-required.md"; do
   if ! grep -Fq "make check" "$plan"; then
     printf '%s\n' "$plan must document make check verification." >&2
     exit 1
@@ -298,6 +335,11 @@ done
 
 if ! grep -Fq "hostile mutations" "$DOCS_PLANS/2026-06-13-alexa-exception-log-redaction.md"; then
   printf '%s\n' "Alexa exception log-redaction plan must record hostile mutations." >&2
+  exit 1
+fi
+
+if ! grep -Fq "hostile mutations" "$DOCS_PLANS/2026-06-13-alexa-lambda-skill-id-required.md"; then
+  printf '%s\n' "Lambda skill-ID plan must document hostile mutations." >&2
   exit 1
 fi
 

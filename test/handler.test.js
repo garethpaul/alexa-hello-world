@@ -2,20 +2,37 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 
 delete process.env.ALEXA_SKILL_ID;
+delete process.env.AWS_LAMBDA_FUNCTION_NAME;
 const AlexaSkill = require('../src/AlexaSkill');
-const { configuredSkillId, handler } = require('../src/index');
+const { configuredSkillId, requiredSkillId, handler } = require('../src/index');
 
-function loadHandlerWithSkillId(skillId) {
+function restoreEnvironment(name, value) {
+  if (value === undefined) {
+    delete process.env[name];
+  } else {
+    process.env[name] = value;
+  }
+}
+
+function loadIndexWithEnvironment(options = {}) {
   const modulePath = require.resolve('../src/index');
+  const previousSkillId = process.env.ALEXA_SKILL_ID;
+  const previousFunctionName = process.env.AWS_LAMBDA_FUNCTION_NAME;
   delete require.cache[modulePath];
 
-  if (skillId) {
-    process.env.ALEXA_SKILL_ID = skillId;
-  } else {
-    delete process.env.ALEXA_SKILL_ID;
-  }
+  restoreEnvironment('ALEXA_SKILL_ID', options.skillId);
+  restoreEnvironment('AWS_LAMBDA_FUNCTION_NAME', options.lambdaFunctionName);
 
-  return require('../src/index').handler;
+  try {
+    return require('../src/index');
+  } finally {
+    restoreEnvironment('ALEXA_SKILL_ID', previousSkillId);
+    restoreEnvironment('AWS_LAMBDA_FUNCTION_NAME', previousFunctionName);
+  }
+}
+
+function loadHandlerWithSkillId(skillId, lambdaFunctionName) {
+  return loadIndexWithEnvironment({ skillId, lambdaFunctionName }).handler;
 }
 
 function invokeEvent(event, options = {}) {
@@ -491,6 +508,60 @@ test('blank configured Alexa skill id leaves application validation disabled', a
     { type: 'LaunchRequest' },
     {
       applicationId: 'amzn1.echo-sdk-ams.app.any',
+      handler: configuredHandler
+    }
+  );
+
+  assert.equal(result.type, 'succeed');
+});
+
+test('local module loading permits a missing Alexa skill id', () => {
+  assert.equal(requiredSkillId(undefined, undefined), undefined);
+  assert.equal(
+    loadIndexWithEnvironment().configuredSkillId(undefined),
+    undefined
+  );
+});
+
+test('Lambda requires a non-empty Alexa skill id', () => {
+  for (const skillId of [undefined, '   ', 42]) {
+    assert.throws(
+      () => requiredSkillId(skillId, 'hello-world-production'),
+      (error) => {
+        assert.ok(error instanceof Error);
+        assert.equal(
+          error.message,
+          'ALEXA_SKILL_ID must be configured in AWS Lambda'
+        );
+        assert.doesNotMatch(error.message, /hello-world-production/);
+        return true;
+      }
+    );
+  }
+});
+
+test('Lambda module loading fails before exporting an unguarded handler', () => {
+  for (const skillId of [undefined, '   ']) {
+    assert.throws(
+      () =>
+        loadIndexWithEnvironment({
+          skillId,
+          lambdaFunctionName: 'hello-world-production'
+        }),
+      /^Error: ALEXA_SKILL_ID must be configured in AWS Lambda$/
+    );
+  }
+});
+
+test('Lambda module loading accepts a configured trimmed Alexa skill id', async () => {
+  const configuredHandler = loadHandlerWithSkillId(
+    '  amzn1.echo-sdk-ams.app.expected  ',
+    'hello-world-production'
+  );
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    {
+      applicationId: 'amzn1.echo-sdk-ams.app.expected',
       handler: configuredHandler
     }
   );

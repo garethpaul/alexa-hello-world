@@ -40,6 +40,10 @@ Helpful reports include:
 - Top-level Alexa execution logs must remain generic. Caught `Error` objects are
   passed unchanged to Lambda failure handling without duplicating their message
   or stack into routine logs.
+- AWS Lambda deployments must configure a non-empty `ALEXA_SKILL_ID`; module
+  initialization fails before exporting an unguarded handler when the
+  runtime-provided function name is present and the authorization identifier is
+  missing or blank.
 
 ## Service and API Notes
 

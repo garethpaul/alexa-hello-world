@@ -6,6 +6,10 @@
   message while preserving the original `Error` for Lambda failure handling.
 - Added regression and portable baseline coverage for handler-provided error
   messages and newline-forged log content.
+- Required a non-empty `ALEXA_SKILL_ID` when AWS Lambda runtime markers are
+  present while preserving optional configuration for local examples.
+- Added module-load, helper, guidance, and portable fail-closed contracts for
+  deployed skill-ID authorization.
 
 ## 2026-06-12
 

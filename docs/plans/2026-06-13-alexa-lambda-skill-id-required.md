@@ -1,6 +1,6 @@
 # Require Alexa Skill ID In Lambda
 
-Status: Planned
+Status: Completed
 
 ## Priority
 
@@ -47,7 +47,8 @@ failure before a handler can accept events.
 
 ### U3: Preserve The Durable Contract
 
-**Files:** `scripts/check-baseline.sh`, `README.md`, `SECURITY.md`, `CHANGES.md`,
+**Files:** `scripts/check-baseline.sh`, `AGENTS.md`, `README.md`, `SECURITY.md`,
+`VISION.md`, `CHANGES.md`,
 `docs/plans/2026-06-13-alexa-lambda-skill-id-required.md`
 
 Require the helper, Lambda runtime signal, regression names, completed plan,
@@ -76,7 +77,17 @@ and deployment guidance. Record actual verification after execution.
 
 ## Verification
 
-Pending implementation and execution.
+- Four focused helper/module-load tests passed for local optional configuration,
+  Lambda missing/blank/non-string rejection, pre-handler module failure, and
+  trimmed configured Lambda acceptance.
+- Canonical and isolated `make check` passed the full 36-test suite, ESLint,
+  Prettier, Node syntax build, and portable baseline checks with the locked
+  dependencies.
+- Eight hostile mutations were rejected: disabled Lambda detection, removed
+  required failure, removed runtime marker, reflected configuration, removed
+  regression coverage, removed README/security guidance, and plan rollback.
+- Live Lambda, Alexa developer-console, IAM, trigger, invocation, and CloudWatch
+  validation was not run because deployment access is unavailable.
 
 ## Sources
 
