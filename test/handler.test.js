@@ -89,6 +89,10 @@ function invoke(request, options = {}) {
     delete event.request.timestamp;
   }
 
+  if (options.omitRequestId) {
+    delete event.request.requestId;
+  }
+
   return invokeEvent(event, options);
 }
 
@@ -491,6 +495,82 @@ test('malformed session attributes are reset before responses are built', async 
 
   assert.equal(result.type, 'succeed');
   assert.deepEqual(result.response.sessionAttributes, {});
+});
+
+test('Alexa requests require their own request ID', async () => {
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    { omitRequestId: true }
+  );
+
+  assertFailure(result, 'Invalid Alexa event: missing request.requestId');
+});
+
+test('Alexa request IDs must be non-empty strings', async () => {
+  for (const requestId of ['', '   ', 42, {}, []]) {
+    const result = await invoke({ type: 'LaunchRequest', requestId });
+
+    assertFailure(
+      result,
+      'Invalid Alexa event: request.requestId must be a non-empty string'
+    );
+  }
+});
+
+test('inherited Alexa request IDs are rejected', async () => {
+  const request = Object.create({ requestId: 'inherited-request-id' });
+  request.type = 'LaunchRequest';
+  request.timestamp = new Date().toISOString();
+
+  const result = await invokeEvent({
+    session: {
+      new: true,
+      sessionId: 'session-id',
+      application: {
+        applicationId: 'amzn1.echo-sdk-ams.app.test'
+      },
+      attributes: {}
+    },
+    request
+  });
+
+  assertFailure(result, 'Invalid Alexa event: missing request.requestId');
+});
+
+test('request ID failures do not reflect caller input into logs or failures', async () => {
+  const requestId = {
+    toString() {
+      return 'forged-request-id\nforged-request-id-log';
+    }
+  };
+  const result = await invoke(
+    { type: 'LaunchRequest', requestId },
+    { captureLogs: true }
+  );
+  const logText = result.logs.join('\n');
+
+  assertFailure(
+    result,
+    'Invalid Alexa event: request.requestId must be a non-empty string'
+  );
+  assert.doesNotMatch(result.error.message, /forged-request-id/);
+  assert.doesNotMatch(logText, /forged-request-id/);
+});
+
+test('request ID shape is validated before timestamp and application id authorization', async () => {
+  const result = await invoke(
+    {
+      type: 'LaunchRequest',
+      timestamp: '2000-01-01T00:00:00.000Z'
+    },
+    {
+      applicationId: 'amzn1.echo-sdk-ams.app.untrusted',
+      handler: loadHandlerWithSkillId('amzn1.echo-sdk-ams.app.trusted'),
+      omitRequestId: true
+    }
+  );
+
+  assertFailure(result, 'Invalid Alexa event: missing request.requestId');
 });
 
 test('Alexa requests require a timestamp', async () => {

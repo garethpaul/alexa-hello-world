@@ -78,6 +78,16 @@ function validateEvent(event, nowMilliseconds) {
     );
   }
 
+  if (!hasOwn(event.request, 'requestId')) {
+    throw new Error('Invalid Alexa event: missing request.requestId');
+  }
+
+  if (!isNonEmptyString(event.request.requestId)) {
+    throw new Error(
+      'Invalid Alexa event: request.requestId must be a non-empty string'
+    );
+  }
+
   if (!hasOwn(event.request, 'timestamp')) {
     throw new Error('Invalid Alexa event: missing request.timestamp');
   }

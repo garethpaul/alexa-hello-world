@@ -17,6 +17,10 @@
   150-second freshness window before authorization or dispatch.
 - Added deterministic boundary, stale/future, malformed-value, ordering, and
   non-reflection coverage for request timestamp validation.
+- Required every Alexa request to provide its own non-empty string `requestId`
+  before timestamp validation, authorization, or dispatch.
+- Added missing, malformed, inherited, ordering, and non-reflection request-ID
+  regression coverage plus portable baseline contracts.
 
 ## 2026-06-12
 

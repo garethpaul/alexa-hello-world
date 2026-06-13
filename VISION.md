@@ -26,6 +26,8 @@ Priority:
   present so deployed authorization fails closed
 - Keep malformed Alexa event failures explicit and locally testable
 - Require Alexa application IDs to be non-empty strings before dispatch
+- Require each Alexa request to own a non-empty string request ID before
+  timestamp validation, authorization, or dispatch
 - Enforce an inclusive 150-second request timestamp freshness window before
   authorization or dispatch
 - Reset malformed Alexa session attributes before building responses

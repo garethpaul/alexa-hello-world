@@ -45,6 +45,7 @@ for path in \
   "docs/plans/2026-06-12-alexa-speech-output-validation.md" \
   "docs/plans/2026-06-13-alexa-exception-log-redaction.md" \
   "docs/plans/2026-06-13-alexa-lambda-skill-id-required.md" \
+  "docs/plans/2026-06-13-alexa-request-id-validation.md" \
   "docs/plans/2026-06-13-alexa-request-timestamp-freshness.md" \
   "docs/plans/2026-06-13-alexa-ssml-speak-envelope.md" \
   "docs/readme-overview.svg" \
@@ -273,6 +274,52 @@ for reflected_failure in \
   fi
 done
 
+for request_id_contract in \
+  "hasOwn(event.request, 'requestId')" \
+  "isNonEmptyString(event.request.requestId)" \
+  "Invalid Alexa event: missing request.requestId" \
+  "Invalid Alexa event: request.requestId must be a non-empty string"; do
+  if ! grep -Fq "$request_id_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep request ID contract: $request_id_contract" >&2
+    exit 1
+  fi
+done
+
+request_id_line=$(grep -nF "hasOwn(event.request, 'requestId')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+timestamp_line=$(grep -nF "hasOwn(event.request, 'timestamp')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+authorization_line=$(grep -nF "event.session.application.applicationId !== this._appId" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$request_id_line" ] || [ -z "$timestamp_line" ] || [ -z "$authorization_line" ] ||
+   [ "$request_id_line" -ge "$timestamp_line" ] ||
+   [ "$request_id_line" -ge "$authorization_line" ]; then
+  printf '%s\n' "AlexaSkill must validate request ID shape before timestamp freshness and application ID authorization." >&2
+  exit 1
+fi
+
+for request_id_test_contract in \
+  "Alexa requests require their own request ID" \
+  "Alexa request IDs must be non-empty strings" \
+  "inherited Alexa request IDs are rejected" \
+  "request ID failures do not reflect caller input into logs or failures" \
+  "request ID shape is validated before timestamp and application id authorization"; do
+  if ! grep -Fq "$request_id_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep request ID contract: $request_id_test_contract" >&2
+    exit 1
+  fi
+done
+
+for request_id_doc_contract in \
+  "$README|own non-empty string \`requestId\`" \
+  "$SECURITY|own non-empty string \`request.requestId\`" \
+  "$ROOT_DIR/VISION.md|Require each Alexa request to own a non-empty string request ID" \
+  "$CHANGES|own non-empty string \`requestId\`"; do
+  request_id_doc=${request_id_doc_contract%%|*}
+  request_id_contract=${request_id_doc_contract#*|}
+  if ! grep -Fq "$request_id_contract" "$request_id_doc"; then
+    printf '%s\n' "$request_id_doc must document request ID validation." >&2
+    exit 1
+  fi
+done
+
 for timestamp_contract in \
   "var REQUEST_TIMESTAMP_TOLERANCE_MS = 150 * 1000;" \
   "var ISO_8601_UTC_PATTERN =" \
@@ -390,6 +437,7 @@ for plan in \
   "$DOCS_PLANS/2026-06-09-scripted-baseline-check.md" \
   "$DOCS_PLANS/2026-06-13-alexa-exception-log-redaction.md" \
   "$DOCS_PLANS/2026-06-13-alexa-lambda-skill-id-required.md" \
+  "$DOCS_PLANS/2026-06-13-alexa-request-id-validation.md" \
   "$DOCS_PLANS/2026-06-13-alexa-request-timestamp-freshness.md" \
   "$DOCS_PLANS/2026-06-13-alexa-ssml-speak-envelope.md"; do
   if ! grep -Fq "make check" "$plan"; then
@@ -415,6 +463,11 @@ fi
 
 if ! grep -Fq "hostile mutations" "$DOCS_PLANS/2026-06-13-alexa-request-timestamp-freshness.md"; then
   printf '%s\n' "Alexa timestamp freshness plan must document hostile mutations." >&2
+  exit 1
+fi
+
+if ! grep -Fq "hostile mutations" "$DOCS_PLANS/2026-06-13-alexa-request-id-validation.md"; then
+  printf '%s\n' "Alexa request-ID plan must document hostile mutations." >&2
   exit 1
 fi
 

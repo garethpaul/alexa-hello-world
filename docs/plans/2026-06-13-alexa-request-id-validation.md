@@ -1,6 +1,6 @@
 # Alexa Request ID Validation
 
-Status: Planned
+Status: Completed
 
 ## Summary
 
@@ -32,7 +32,27 @@ used to correlate Alexa requests.
 - Do not change Alexa response payloads, intents, timestamps, or Lambda setup.
 - Do not migrate the legacy callback-style implementation.
 
-## Planned Verification
+## Work Completed
+
+- Required `request.requestId` to be an own property before timestamp
+  validation or configured skill-ID authorization.
+- Rejected missing, blank, non-string, inherited, object, and array request
+  IDs with stable errors that do not contain caller input.
+- Added focused regressions, ordering and non-reflection coverage, portable
+  static contracts, and README, security, vision, and changelog guidance.
+
+## Verification
+
+- `npm test` passed all 57 tests.
+- `npm run lint`, `npm run format:check`, and `npm run build` passed with the
+  lockfile-installed dependency graph.
+- `make check` passed from the repository and through `make -C` from an
+  external working directory.
+- Seven hostile mutations were killed: missing own-property validation,
+  inherited acceptance, blank acceptance, ordering drift, reflected input,
+  README contract removal, and plan-status rollback.
+
+## Verification Commands
 
 - `make lint`
 - `make test`
