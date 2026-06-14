@@ -658,6 +658,28 @@ test('malformed events without a request type fail with a clear message', async 
   assertFailure(result, 'Invalid Alexa event: missing request.type');
 });
 
+test('Alexa events require their own request envelope', async () => {
+  const inheritedRequest = {
+    requestId: 'inherited-request-id',
+    timestamp: new Date().toISOString(),
+    type: 'LaunchRequest'
+  };
+  const event = Object.assign(Object.create({ request: inheritedRequest }), {
+    session: {
+      new: true,
+      sessionId: 'session-id',
+      application: {
+        applicationId: 'amzn1.echo-sdk-ams.app.test'
+      },
+      attributes: {}
+    }
+  });
+
+  const result = await invokeEvent(event);
+
+  assertFailure(result, 'Invalid Alexa event: missing request.type');
+});
+
 test('malformed events with non-string request types fail before dispatch', async () => {
   const result = await invokeEvent({
     session: {

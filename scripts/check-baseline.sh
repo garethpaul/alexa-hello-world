@@ -54,9 +54,59 @@ for path in \
   "docs/plans/2026-06-14-alexa-session-id-validation.md" \
   "docs/plans/2026-06-14-alexa-integration-verification-checklist.md" \
   "docs/plans/2026-06-14-alexa-application-identity-ownership.md" \
+  "docs/plans/2026-06-14-alexa-request-envelope-ownership.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
+done
+
+for request_envelope_contract in \
+  "!hasOwn(event, 'request')" \
+  "Invalid Alexa event: missing request.type"; do
+  if ! grep -Fq "$request_envelope_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep request envelope ownership: $request_envelope_contract" >&2
+    exit 1
+  fi
+done
+
+request_envelope_line=$(grep -nF "!hasOwn(event, 'request')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+request_type_line=$(grep -nF "hasOwn(event.request, 'type')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$request_envelope_line" ] || [ -z "$request_type_line" ] || \
+   [ "$request_envelope_line" -ge "$request_type_line" ]; then
+  printf '%s\n' "AlexaSkill must validate request envelope ownership before nested request fields." >&2
+  exit 1
+fi
+
+for request_envelope_test_contract in \
+  "Alexa events require their own request envelope" \
+  "Object.create({ request: inheritedRequest })" \
+  "Invalid Alexa event: missing request.type"; do
+  if ! grep -Fq "$request_envelope_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep request envelope ownership: $request_envelope_test_contract" >&2
+    exit 1
+  fi
+done
+
+for request_envelope_document in \
+  "$README" \
+  "$SECURITY" \
+  "$ROOT_DIR/VISION.md" \
+  "$CHANGES"; do
+  if ! grep -Fq "own request envelope" "$request_envelope_document"; then
+    printf '%s\n' "$request_envelope_document must document own request envelope validation." >&2
+    exit 1
+  fi
+done
+
+for request_envelope_plan_contract in \
+  "status: completed" \
+  "make check" \
+  "mutations"; do
+  if ! grep -Fqi "$request_envelope_plan_contract" \
+    "$DOCS_PLANS/2026-06-14-alexa-request-envelope-ownership.md"; then
+    printf '%s\n' "Request envelope plan must keep completion evidence: $request_envelope_plan_contract" >&2
+    exit 1
+  fi
 done
 
 for application_identity_contract in \

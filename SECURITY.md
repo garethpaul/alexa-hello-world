@@ -40,6 +40,8 @@ Helpful reports include:
 - Every Alexa event must provide its own application identity fields through a
   non-empty string `session.application.applicationId`; inherited container or
   identifier properties fail before authorization.
+- Every Alexa event must provide its own request envelope before nested request
+  fields or dispatch are trusted.
 - Every Alexa event must provide its own non-empty string `session.sessionId`
   before lifecycle validation, authorization, or dispatch. Identifier values
   are not reflected into logs or errors.

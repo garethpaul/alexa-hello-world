@@ -2,6 +2,8 @@
 
 ## 2026-06-14
 
+- Required Alexa events to provide their own request envelope before nested
+  request validation or dispatch.
 - Required Alexa events to supply their own application identity container and
   identifier properties before skill-ID authorization.
 - Required every Alexa session to provide its own boolean `session.new` before

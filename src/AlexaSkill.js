@@ -88,7 +88,11 @@ function validateEvent(event, nowMilliseconds) {
     throw new Error('Invalid Alexa event: session.new must be a boolean');
   }
 
-  if (!event.request || !hasOwn(event.request, 'type')) {
+  if (
+    !hasOwn(event, 'request') ||
+    !event.request ||
+    !hasOwn(event.request, 'type')
+  ) {
     throw new Error('Invalid Alexa event: missing request.type');
   }
 

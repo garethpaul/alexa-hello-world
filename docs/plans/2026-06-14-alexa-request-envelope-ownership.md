@@ -1,7 +1,7 @@
 ---
 title: Alexa Request Envelope Ownership
 type: security
-status: planned
+status: completed
 date: 2026-06-14
 ---
 
@@ -49,3 +49,15 @@ a complete request from its prototype and reach normal dispatch.
   skill invocation or AWS credentials are used.
 - The fix intentionally preserves the legacy error text rather than introducing
   a broader validation error taxonomy.
+
+## Verification Results
+
+- The focused inherited-envelope regression and all 67 Node tests passed.
+- The pinned lint, Prettier, and JavaScript syntax build gates passed.
+- Repository-root and external-directory `make check` passed.
+- Eight hostile mutations covering the ownership guard, boolean combination,
+  inherited-request fixture, stable failure, documentation, and plan status
+  were rejected.
+- Exact diff, generated-artifact, changed-line secret, and whitespace audits
+  passed. Hosted checks remain to be captured from the exact pushed head.
+- No live Alexa skill invocation or AWS credentials were used.
