@@ -1,6 +1,6 @@
 # Make Root Override Protection
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -31,3 +31,27 @@ checkout.
 - Do not change Lambda behavior, package versions, workflows, speech assets,
   response contracts, or deployment configuration.
 - Do not merge or close any pull request without explicit owner authorization.
+
+## Work Completed
+
+- Protected the Makefile-derived root while preserving npm configurability and
+  every existing target.
+- Added exact shell contracts for protected derivation, npm override semantics,
+  four rooted package commands, the rooted baseline script, and this completed
+  plan.
+
+## Verification Results
+
+- The focused dependency-free baseline checker passed.
+- `npm ci --ignore-scripts --no-audit --no-fund` installed the exact lock's 72
+  packages, and `npm audit --audit-level=moderate` reported zero
+  vulnerabilities.
+- Local, external-directory, and hostile command-line `ROOT` `make check`
+  gates each passed lint, format, all 57 Node tests, syntax build, and the
+  baseline checker.
+- All eight focused mutations were rejected: missing `override`, `CURDIR`,
+  recursive root assignment, `firstword`, eager npm assignment, one unrooted
+  package command, a relative baseline command, and reopened plan status.
+- JSON, YAML, SVG XML, shell syntax, whitespace, ignored-artifact, and
+  changed-line credential audits passed; only the three intended files were
+  changed and no generated artifacts remained.

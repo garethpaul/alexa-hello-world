@@ -48,6 +48,7 @@ for path in \
   "docs/plans/2026-06-13-alexa-request-id-validation.md" \
   "docs/plans/2026-06-13-alexa-request-timestamp-freshness.md" \
   "docs/plans/2026-06-13-alexa-ssml-speak-envelope.md" \
+  "docs/plans/2026-06-14-make-root-override-protection.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
@@ -184,12 +185,21 @@ for svg_contract in "<svg" "viewBox=" "</svg>"; do
   fi
 done
 
-if ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE"; then
-  printf '%s\n' "Makefile must resolve repository paths from its own location." >&2
+if ! grep -Fxq 'override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE"; then
+  printf '%s\n' "Makefile must protect repository paths from command-line overrides." >&2
   exit 1
 fi
-if ! grep -Fq "scripts/check-baseline.sh" "$MAKEFILE"; then
-  printf '%s\n' "Makefile must run scripts/check-baseline.sh from make check." >&2
+if ! grep -Fxq 'NPM ?= npm' "$MAKEFILE"; then
+  printf '%s\n' "Makefile must preserve the npm command override." >&2
+  exit 1
+fi
+if [ "$(grep -Fc 'cd $(ROOT) && $(NPM)' "$MAKEFILE")" -ne 4 ]; then
+  printf '%s\n' "All four npm commands must execute from the repository root." >&2
+  exit 1
+fi
+make_tab=$(printf '\t')
+if ! grep -Fxq "${make_tab}sh \$(ROOT)scripts/check-baseline.sh" "$MAKEFILE"; then
+  printf '%s\n' "Makefile must run the rooted baseline script from make check." >&2
   exit 1
 fi
 
