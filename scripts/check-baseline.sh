@@ -49,6 +49,7 @@ for path in \
   "docs/plans/2026-06-13-alexa-request-timestamp-freshness.md" \
   "docs/plans/2026-06-13-alexa-ssml-speak-envelope.md" \
   "docs/plans/2026-06-14-make-root-override-protection.md" \
+  "docs/plans/2026-06-14-alexa-session-new-validation.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
@@ -284,6 +285,51 @@ for reflected_failure in \
   fi
 done
 
+for session_new_contract in \
+  "hasOwn(event.session, 'new')" \
+  "typeof event.session.new !== 'boolean'" \
+  "Invalid Alexa event: missing session.new" \
+  "Invalid Alexa event: session.new must be a boolean"; do
+  if ! grep -Fq "$session_new_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep session.new contract: $session_new_contract" >&2
+    exit 1
+  fi
+done
+
+session_new_line=$(grep -nF "hasOwn(event.session, 'new')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+request_type_line=$(grep -nF "hasOwn(event.request, 'type')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+authorization_line=$(grep -nF "event.session.application.applicationId !== this._appId" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$session_new_line" ] || [ -z "$request_type_line" ] || [ -z "$authorization_line" ] ||
+   [ "$session_new_line" -ge "$request_type_line" ] ||
+   [ "$session_new_line" -ge "$authorization_line" ]; then
+  printf '%s\n' "AlexaSkill must validate session.new before request dispatch and application ID authorization." >&2
+  exit 1
+fi
+
+for session_new_test_contract in \
+  "Alexa sessions require their own new-session flag" \
+  "Alexa session new flags must be booleans" \
+  "false session new flags skip session-start lifecycle only" \
+  "session new shape is validated before request and application authorization"; do
+  if ! grep -Fq "$session_new_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep session.new contract: $session_new_test_contract" >&2
+    exit 1
+  fi
+done
+
+for session_new_doc_contract in \
+  "$README|own boolean \`session.new\`" \
+  "$SECURITY|own boolean \`session.new\`" \
+  "$ROOT_DIR/VISION.md|Require each Alexa session to own a boolean new-session flag" \
+  "$CHANGES|own boolean \`session.new\`"; do
+  session_new_doc=${session_new_doc_contract%%|*}
+  session_new_contract=${session_new_doc_contract#*|}
+  if ! grep -Fq "$session_new_contract" "$session_new_doc"; then
+    printf '%s\n' "$session_new_doc must document session.new validation." >&2
+    exit 1
+  fi
+done
+
 for request_id_contract in \
   "hasOwn(event.request, 'requestId')" \
   "isNonEmptyString(event.request.requestId)" \
@@ -449,7 +495,8 @@ for plan in \
   "$DOCS_PLANS/2026-06-13-alexa-lambda-skill-id-required.md" \
   "$DOCS_PLANS/2026-06-13-alexa-request-id-validation.md" \
   "$DOCS_PLANS/2026-06-13-alexa-request-timestamp-freshness.md" \
-  "$DOCS_PLANS/2026-06-13-alexa-ssml-speak-envelope.md"; do
+  "$DOCS_PLANS/2026-06-13-alexa-ssml-speak-envelope.md" \
+  "$DOCS_PLANS/2026-06-14-alexa-session-new-validation.md"; do
   if ! grep -Fq "make check" "$plan"; then
     printf '%s\n' "$plan must document make check verification." >&2
     exit 1

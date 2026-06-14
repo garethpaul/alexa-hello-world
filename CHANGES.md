@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-14
+
+- Required every Alexa session to provide its own boolean `session.new` before
+  request validation, authorization, or lifecycle dispatch.
+- Added missing, inherited, malformed-value, and ordering regressions plus
+  mutation-sensitive baseline contracts.
+
 ## 2026-06-13
 
 - Replaced exception-derived top-level Alexa logs with a stable generic failure

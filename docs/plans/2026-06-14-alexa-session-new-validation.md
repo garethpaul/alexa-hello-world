@@ -1,6 +1,6 @@
 # Alexa Session New Validation
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -42,12 +42,22 @@ maintenance, security, vision, and change guidance.
 
 ## Verification
 
-- Run the focused session-new tests first, then the complete package gate.
-- Run root and external `make check` gates with explicit timeouts.
-- Reject focused mutations for presence, boolean type, ordering, test names,
-  documentation, plan status, and plan presence.
-- Run lint, formatting, syntax, JSON/YAML parsing, `git diff --check`, and
-  explicit secret and generated-artifact audits.
+Completed on 2026-06-14:
+
+- The malformed-field focused tests first failed because missing and malformed
+  flags were accepted and request validation ran first, then passed after
+  implementation; a valid `false` regression proves launch dispatch continues
+  without new-session initialization.
+- The complete 61-test suite, ESLint, Prettier, Node syntax build, shell syntax,
+  JSON parsing, and `git diff --check` passed with the exact lockfile toolchain.
+- `npm ci` installed 72 packages and reported zero known vulnerabilities across
+  73 audited packages.
+- An unmodified disposable copy passed with this plan marked complete.
+- Seven hostile mutations were rejected: own-property presence, boolean type,
+  validation order, test name, documentation, plan status, and plan presence.
+- Bounded `make check` passed from the repository root and from `/tmp` through
+  the absolute Makefile path. Both runs passed ESLint, Prettier, all 61 tests,
+  syntax build, and the baseline checker.
 
 ## Scope Boundaries
 

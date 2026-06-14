@@ -68,6 +68,14 @@ function validateEvent(event, nowMilliseconds) {
     );
   }
 
+  if (!hasOwn(event.session, 'new')) {
+    throw new Error('Invalid Alexa event: missing session.new');
+  }
+
+  if (typeof event.session.new !== 'boolean') {
+    throw new Error('Invalid Alexa event: session.new must be a boolean');
+  }
+
   if (!event.request || !hasOwn(event.request, 'type')) {
     throw new Error('Invalid Alexa event: missing request.type');
   }

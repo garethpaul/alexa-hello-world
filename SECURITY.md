@@ -34,6 +34,9 @@ Helpful reports include:
 - Dependency manifests detected: package.json, package-lock.json. Dependency updates should preserve lockfiles when present and avoid introducing packages without a clear maintenance reason.
 - Alexa request dispatch should reject non-string handler keys before lookup so
   crafted objects cannot coerce into supported request or intent names.
+- Every Alexa event must provide its own boolean `session.new` before request
+  validation, authorization, or lifecycle dispatch. Caller-provided values are
+  not reflected into errors or logs.
 - Every Alexa event must provide its own non-empty string `request.requestId`
   before timestamp validation, authorization, or dispatch. This validates the
   protocol envelope but does not provide replay detection or persistence.

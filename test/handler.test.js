@@ -93,6 +93,14 @@ function invoke(request, options = {}) {
     delete event.request.requestId;
   }
 
+  if (Object.hasOwn(options, 'sessionNew')) {
+    event.session.new = options.sessionNew;
+  }
+
+  if (options.omitSessionNew) {
+    delete event.session.new;
+  }
+
   return invokeEvent(event, options);
 }
 
@@ -430,6 +438,68 @@ test('malformed events with non-string application ids fail before validation', 
     result,
     'Invalid Alexa event: session.application.applicationId must be a non-empty string'
   );
+});
+
+test('Alexa sessions require their own new-session flag', async () => {
+  const missing = await invoke(
+    { type: 'LaunchRequest' },
+    { omitSessionNew: true }
+  );
+
+  const inheritedSession = Object.assign(Object.create({ new: true }), {
+    sessionId: 'session-id',
+    application: {
+      applicationId: 'amzn1.echo-sdk-ams.app.test'
+    },
+    attributes: {}
+  });
+  const inherited = await invokeEvent({
+    session: inheritedSession,
+    request: {
+      requestId: 'request-id',
+      timestamp: new Date().toISOString(),
+      type: 'LaunchRequest'
+    }
+  });
+
+  assertFailure(missing, 'Invalid Alexa event: missing session.new');
+  assertFailure(inherited, 'Invalid Alexa event: missing session.new');
+});
+
+test('Alexa session new flags must be booleans', async () => {
+  for (const sessionNew of ['false', 0, 1, null, {}, []]) {
+    const result = await invoke({ type: 'LaunchRequest' }, { sessionNew });
+
+    assertFailure(result, 'Invalid Alexa event: session.new must be a boolean');
+  }
+});
+
+test('false session new flags skip session-start lifecycle only', async () => {
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    { captureLogs: true, sessionNew: false }
+  );
+  const logText = result.logs.join('\n');
+
+  assert.equal(result.type, 'succeed');
+  assert.doesNotMatch(logText, /HelloWorld onSessionStarted/);
+  assert.match(logText, /HelloWorld onLaunch/);
+});
+
+test('session new shape is validated before request and application authorization', async () => {
+  const configuredHandler = loadHandlerWithSkillId(
+    'amzn1.echo-sdk-ams.app.expected'
+  );
+  const result = await invoke(
+    { type: 'LaunchRequest', requestId: undefined, timestamp: undefined },
+    {
+      applicationId: 'amzn1.echo-sdk-ams.app.other',
+      handler: configuredHandler,
+      sessionNew: 'false'
+    }
+  );
+
+  assertFailure(result, 'Invalid Alexa event: session.new must be a boolean');
 });
 
 test('malformed events without a request type fail with a clear message', async () => {
