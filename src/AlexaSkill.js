@@ -155,7 +155,7 @@ AlexaSkill.speechOutputType = {
 
 AlexaSkill.prototype.requestHandlers = {
   LaunchRequest: function (event, context, response) {
-    this.eventHandlers.onLaunch.call(
+    return this.eventHandlers.onLaunch.call(
       this,
       event.request,
       event.session,
@@ -164,7 +164,7 @@ AlexaSkill.prototype.requestHandlers = {
   },
 
   IntentRequest: function (event, context, response) {
-    this.eventHandlers.onIntent.call(
+    return this.eventHandlers.onIntent.call(
       this,
       event.request,
       event.session,
@@ -173,8 +173,7 @@ AlexaSkill.prototype.requestHandlers = {
   },
 
   SessionEndedRequest: function (event, context) {
-    this.eventHandlers.onSessionEnded(event.request, event.session);
-    context.succeed();
+    return this.eventHandlers.onSessionEnded(event.request, event.session);
   }
 };
 
@@ -217,7 +216,7 @@ AlexaSkill.prototype.eventHandlers = {
         : undefined;
     if (intentHandler) {
       console.log('dispatch intent = ' + intentName);
-      intentHandler.call(this, intent, session, response);
+      return intentHandler.call(this, intent, session, response);
     } else {
       throw new Error('Unsupported intent');
     }
@@ -235,7 +234,7 @@ AlexaSkill.prototype.eventHandlers = {
  */
 AlexaSkill.prototype.intentHandlers = {};
 
-AlexaSkill.prototype.execute = function (event, context) {
+AlexaSkill.prototype.execute = async function (event, context) {
   try {
     validateEvent(event, this._now());
 
@@ -255,7 +254,7 @@ AlexaSkill.prototype.execute = function (event, context) {
     }
 
     if (event.session.new) {
-      this.eventHandlers.onSessionStarted(event.request, event.session);
+      await this.eventHandlers.onSessionStarted(event.request, event.session);
     }
 
     // Route the request to the proper handler which may have been overriden.
@@ -265,20 +264,19 @@ AlexaSkill.prototype.execute = function (event, context) {
     if (!requestHandler) {
       throw new Error('Unsupported request type');
     }
-    requestHandler.call(
+    return await requestHandler.call(
       this,
       event,
       context,
-      new Response(context, event.session)
+      new Response(event.session)
     );
   } catch (e) {
     console.log('Alexa request failed');
-    context.fail(e);
+    throw e;
   }
 };
 
-var Response = function (context, session) {
-  this._context = context;
+var Response = function (session) {
   this._session = session;
 };
 
@@ -369,34 +367,28 @@ Response.prototype = (function () {
 
   return {
     tell: function (speechOutput) {
-      this._context.succeed(
-        buildSpeechletResponse({
-          session: this._session,
-          output: speechOutput,
-          shouldEndSession: true
-        })
-      );
+      return buildSpeechletResponse({
+        session: this._session,
+        output: speechOutput,
+        shouldEndSession: true
+      });
     },
     tellWithCard: function (speechOutput, cardTitle, cardContent) {
-      this._context.succeed(
-        buildSpeechletResponse({
-          session: this._session,
-          output: speechOutput,
-          cardTitle: cardTitle,
-          cardContent: cardContent,
-          shouldEndSession: true
-        })
-      );
+      return buildSpeechletResponse({
+        session: this._session,
+        output: speechOutput,
+        cardTitle: cardTitle,
+        cardContent: cardContent,
+        shouldEndSession: true
+      });
     },
     ask: function (speechOutput, repromptSpeech) {
-      this._context.succeed(
-        buildSpeechletResponse({
-          session: this._session,
-          output: speechOutput,
-          reprompt: repromptSpeech,
-          shouldEndSession: false
-        })
-      );
+      return buildSpeechletResponse({
+        session: this._session,
+        output: speechOutput,
+        reprompt: repromptSpeech,
+        shouldEndSession: false
+      });
     },
     askWithCard: function (
       speechOutput,
@@ -404,16 +396,14 @@ Response.prototype = (function () {
       cardTitle,
       cardContent
     ) {
-      this._context.succeed(
-        buildSpeechletResponse({
-          session: this._session,
-          output: speechOutput,
-          reprompt: repromptSpeech,
-          cardTitle: cardTitle,
-          cardContent: cardContent,
-          shouldEndSession: false
-        })
-      );
+      return buildSpeechletResponse({
+        session: this._session,
+        output: speechOutput,
+        reprompt: repromptSpeech,
+        cardTitle: cardTitle,
+        cardContent: cardContent,
+        shouldEndSession: false
+      });
     }
   };
 })();

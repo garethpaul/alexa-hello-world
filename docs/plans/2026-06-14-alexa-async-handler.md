@@ -1,7 +1,7 @@
 ---
 title: Alexa Async Lambda Handler
 type: modernization
-status: planned
+status: completed
 date: 2026-06-14
 ---
 
@@ -11,14 +11,14 @@ date: 2026-06-14
 
 The sample targets Node.js 20 and newer but still completes requests through
 the legacy `context.succeed` and `context.fail` APIs. AWS recommends async
-handlers, and callback-based Node.js handlers are not supported after Node.js
-22. The current completion contract therefore blocks a clean Node.js 24 Lambda
+handlers, and callback-based Node.js handlers are not supported after Node.js 22. The current completion contract therefore blocks a clean Node.js 24 Lambda
 runtime path even though hosted verification already includes Node.js 24.
 
 ## Requirements
 
-- Export an async Lambda handler that resolves with the existing Alexa response
-  payload and rejects with the original stack-bearing `Error`.
+- Export an async Lambda handler that preserves the read-only Lambda context,
+  resolves with the existing Alexa response payload, and rejects with the
+  original stack-bearing `Error`.
 - Make `AlexaSkill.execute` await lifecycle and request handlers so future
   asynchronous handlers complete before Lambda returns.
 - Make response helpers return response payloads instead of completing a
@@ -56,3 +56,18 @@ runtime path even though hosted verification already includes Node.js 24.
 - Awaiting user-defined lifecycle hooks can expose handlers that previously
   started asynchronous work without returning it; this is intentional because
   Lambda must not finish before declared handler work settles.
+
+## Verification Results
+
+- The focused promise resolution, rejection, session-ended, and awaited
+  lifecycle coverage passed as part of all 70 Node tests.
+- The pinned ESLint, Prettier, and JavaScript syntax build gates passed with
+  zero npm audit vulnerabilities.
+- Ten hostile mutations covering the async export, handler return, async
+  execution, awaited lifecycle, dispatch return, error rejection, all response
+  returns, legacy context completion, promise regression, and context
+  preservation were rejected.
+- Repository and external-directory `make check` both passed all 70 tests plus
+  lint, formatting, syntax build, and the fail-closed repository baseline.
+- No live Lambda or Alexa invocation was performed, and no AWS credentials were
+  used.

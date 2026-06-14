@@ -55,14 +55,12 @@ function invokeEvent(event, options = {}) {
       resolve(Object.assign({ logs }, result));
     }
 
-    try {
-      requestHandler(event, {
-        succeed: (response) => finish({ type: 'succeed', response }),
-        fail: (error) => finish({ type: 'fail', error })
-      });
-    } catch (error) {
-      finish({ type: 'throw', error });
-    }
+    Promise.resolve()
+      .then(() => requestHandler(event, options.context || {}))
+      .then(
+        (response) => finish({ type: 'succeed', response }),
+        (error) => finish({ type: 'fail', error })
+      );
   });
 }
 
@@ -120,30 +118,30 @@ function assertFailure(result, message) {
 }
 
 function responseHandler(output, reprompt, shouldAsk, now) {
-  return function (event, context) {
+  return function (event) {
     const skill = new AlexaSkill(undefined, now);
     skill.eventHandlers = Object.assign({}, skill.eventHandlers, {
       onLaunch: function (launchRequest, session, response) {
         if (shouldAsk) {
-          response.ask(output, reprompt);
-        } else {
-          response.tell(output);
+          return response.ask(output, reprompt);
         }
+
+        return response.tell(output);
       }
     });
-    skill.execute(event, context);
+    return skill.execute(event);
   };
 }
 
 function throwingResponseHandler(error) {
-  return function (event, context) {
+  return function (event) {
     const skill = new AlexaSkill();
     skill.eventHandlers = Object.assign({}, skill.eventHandlers, {
       onLaunch: function () {
         throw error;
       }
     });
-    skill.execute(event, context);
+    return skill.execute(event);
   };
 }
 
@@ -174,6 +172,103 @@ test('launch request returns welcome prompt and keeps the session open', async (
     'You can say hello'
   );
   assert.equal(result.response.response.shouldEndSession, false);
+});
+
+test('Lambda handler resolves through its returned promise', async () => {
+  const event = {
+    session: {
+      new: true,
+      sessionId: 'session-id',
+      application: {
+        applicationId: 'amzn1.echo-sdk-ams.app.test'
+      },
+      attributes: {}
+    },
+    request: {
+      requestId: 'request-id',
+      timestamp: new Date().toISOString(),
+      type: 'LaunchRequest'
+    }
+  };
+  const completion = handler(event);
+
+  assert.equal(typeof completion.then, 'function');
+  const response = await completion;
+  assert.equal(
+    response.response.outputSpeech.text,
+    'Welcome to the Alexa Skills Kit, you can say hello'
+  );
+});
+
+test('Lambda handler rejects through its returned promise', async () => {
+  await assert.rejects(handler({}), {
+    message: 'Invalid Alexa event: missing session.application.applicationId'
+  });
+});
+
+test('AlexaSkill awaits asynchronous lifecycle handlers before dispatch', async () => {
+  const order = [];
+  const skill = new AlexaSkill();
+  skill.eventHandlers = Object.assign({}, skill.eventHandlers, {
+    onSessionStarted: async function () {
+      await Promise.resolve();
+      order.push('started');
+    },
+    onLaunch: function (launchRequest, session, response) {
+      order.push('launch');
+      return response.tell('ready');
+    }
+  });
+  const event = {
+    session: {
+      new: true,
+      sessionId: 'session-id',
+      application: {
+        applicationId: 'amzn1.echo-sdk-ams.app.test'
+      },
+      attributes: {}
+    },
+    request: {
+      requestId: 'request-id',
+      timestamp: new Date().toISOString(),
+      type: 'LaunchRequest'
+    }
+  };
+
+  const response = await skill.execute(event);
+
+  assert.deepEqual(order, ['started', 'launch']);
+  assert.equal(response.response.outputSpeech.text, 'ready');
+});
+
+test('AlexaSkill preserves Lambda context for custom request handlers', async () => {
+  const context = { awsRequestId: 'lambda-request-id' };
+  const skill = new AlexaSkill();
+  skill.requestHandlers = Object.assign({}, skill.requestHandlers, {
+    LaunchRequest: function (event, receivedContext, response) {
+      assert.equal(receivedContext, context);
+      return response.tell('context preserved');
+    }
+  });
+  const event = {
+    session: {
+      new: false,
+      sessionId: 'session-id',
+      application: {
+        applicationId: 'amzn1.echo-sdk-ams.app.test'
+      },
+      attributes: {}
+    },
+    request: {
+      requestId: 'request-id',
+      timestamp: new Date().toISOString(),
+      type: 'LaunchRequest'
+    }
+  };
+
+  const response = await skill.execute(event, context);
+
+  assert.equal(response.response.outputSpeech.text, 'context preserved');
 });
 
 test('response helper accepts explicit PlainText and SSML speech', async () => {

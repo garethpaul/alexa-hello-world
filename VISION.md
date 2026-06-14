@@ -44,6 +44,8 @@ Priority:
   application identifiers
 - Do not reflect unsupported caller-controlled request or intent names into
   Lambda failures or logs
+- Use a promise-returning Lambda handler and await declared lifecycle work
+  before completing an invocation
 - Return stack-bearing `Error` objects for validation and dispatch failures
 - Validate primary and reprompt speech before constructing Alexa responses
 - Keep direct-response SSML speak envelopes validated in the shared primary

@@ -54,12 +54,12 @@ Helpful reports include:
   trigger authorization.
 - Primary and reprompt speech must be validated before response construction;
   unsupported types and missing, blank, or non-string speech fail before
-  `context.succeed` receives a payload.
+  the promise-returning Lambda handler resolves with a payload.
 - The shared SSML envelope check requires primary output and reprompts to use a
   trimmed `<speak>` root before caller-provided markup reaches Alexa.
-- Top-level Alexa execution logs must remain generic. Caught `Error` objects are
-  passed unchanged to Lambda failure handling without duplicating their message
-  or stack into routine logs.
+- Top-level Alexa execution logs must remain generic and must not duplicate an
+  error message or stack into routine logs.
+- The promise-returning Lambda handler rejects caught `Error` objects unchanged.
 - AWS Lambda deployments must configure a non-empty `ALEXA_SKILL_ID`; module
   initialization fails before exporting an unguarded handler when the
   runtime-provided function name is present and the authorization identifier is

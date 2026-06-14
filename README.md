@@ -99,7 +99,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Routine handler logs avoid raw Alexa request IDs, session IDs, and configured
   or incoming application IDs.
 - Top-level handler failures use a generic log message while preserving the
-  original stack-bearing `Error` for Lambda failure handling.
+  original stack-bearing `Error` as a rejected promise.
+- The promise-returning Lambda handler resolves with the existing Alexa
+  response payload while preserving Lambda context for custom request handlers.
 - Alexa events must provide their own application identity chain through a
   non-empty string `session.application.applicationId` before optional skill-id
   comparison or request dispatch.
@@ -119,7 +121,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
   preventing embedded control characters from forging log entries.
 - Primary and reprompt speech are validated before response construction.
   Supported output is a non-empty string or a `PlainText`/`SSML` options
-  object; malformed output fails before `context.succeed` receives a payload.
+  object; malformed output rejects before the Lambda handler resolves.
 - Direct `SSML` output and reprompts must retain a trimmed `<speak>` envelope;
   mislabeled plain text or alternate roots fail before response construction.
 

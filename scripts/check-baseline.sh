@@ -10,6 +10,7 @@ PACKAGE_JSON="$ROOT_DIR/package.json"
 GITIGNORE="$ROOT_DIR/.gitignore"
 DOCS_PLANS="$ROOT_DIR/docs/plans"
 ALEXA_SKILL="$ROOT_DIR/src/AlexaSkill.js"
+INDEX="$ROOT_DIR/src/index.js"
 
 require_file() {
   path=$1
@@ -55,9 +56,76 @@ for path in \
   "docs/plans/2026-06-14-alexa-integration-verification-checklist.md" \
   "docs/plans/2026-06-14-alexa-application-identity-ownership.md" \
   "docs/plans/2026-06-14-alexa-request-envelope-ownership.md" \
+  "docs/plans/2026-06-14-alexa-async-handler.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
+done
+
+for async_index_contract in \
+  "exports.handler = async function (event, context)" \
+  "return helloWorld.execute(event, context);"; do
+  if ! grep -Fq "$async_index_contract" "$INDEX"; then
+    printf '%s\n' "Lambda entry point must keep async return contract: $async_index_contract" >&2
+    exit 1
+  fi
+done
+
+for async_skill_contract in \
+  "AlexaSkill.prototype.execute = async function (event, context)" \
+  "await this.eventHandlers.onSessionStarted" \
+  "return await requestHandler.call" \
+  "throw e;"; do
+  if ! grep -Fq "$async_skill_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep promise completion contract: $async_skill_contract" >&2
+    exit 1
+  fi
+done
+
+if [ "$(grep -Fc "return buildSpeechletResponse" "$ALEXA_SKILL")" -ne 4 ]; then
+  printf '%s\n' "All four Alexa response helpers must return their response payload." >&2
+  exit 1
+fi
+
+if grep -Eq 'context\.(succeed|fail)' "$ROOT_DIR/src/AlexaSkill.js" "$INDEX"; then
+  printf '%s\n' "Runtime source must not restore legacy Lambda context completion." >&2
+  exit 1
+fi
+
+for async_test_contract in \
+  "Lambda handler resolves through its returned promise" \
+  "Lambda handler rejects through its returned promise" \
+  "AlexaSkill awaits asynchronous lifecycle handlers before dispatch" \
+  "AlexaSkill preserves Lambda context for custom request handlers"; do
+  if ! grep -Fq "$async_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep async Lambda contract: $async_test_contract" >&2
+    exit 1
+  fi
+done
+
+for async_doc_contract in \
+  "$README|promise-returning Lambda handler" \
+  "$SECURITY|promise-returning Lambda handler" \
+  "$ROOT_DIR/VISION.md|promise-returning Lambda handler" \
+  "$CHANGES|promise-returning Lambda"; do
+  async_doc=${async_doc_contract%%|*}
+  async_text=${async_doc_contract#*|}
+  if ! grep -Fq "$async_text" "$async_doc"; then
+    printf '%s\n' "$async_doc must document async Lambda completion." >&2
+    exit 1
+  fi
+done
+
+for async_plan_contract in \
+  "status: completed" \
+  "make check" \
+  "hostile mutations" \
+  "No live Lambda or Alexa invocation was performed"; do
+  if ! grep -Fqi "$async_plan_contract" \
+    "$DOCS_PLANS/2026-06-14-alexa-async-handler.md"; then
+    printf '%s\n' "Async Lambda plan must keep completion evidence: $async_plan_contract" >&2
+    exit 1
+  fi
 done
 
 for request_envelope_contract in \
@@ -429,8 +497,8 @@ if [ "$(grep -Fc "console.log('Alexa request failed');" "$ALEXA_SKILL")" -ne 1 ]
   printf '%s\n' "AlexaSkill must keep exactly one generic top-level request failure log." >&2
   exit 1
 fi
-if [ "$(grep -Fc "context.fail(e);" "$ALEXA_SKILL")" -ne 1 ]; then
-  printf '%s\n' "AlexaSkill must pass the caught Error exactly once to Lambda failure handling." >&2
+if [ "$(grep -Fc "throw e;" "$ALEXA_SKILL")" -ne 1 ]; then
+  printf '%s\n' "AlexaSkill must rethrow the caught Error exactly once for promise rejection." >&2
   exit 1
 fi
 for reflected_exception in \

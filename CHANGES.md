@@ -2,6 +2,9 @@
 
 ## 2026-06-14
 
+- Replaced legacy Lambda context completion with a promise-returning Lambda
+  handler that resolves responses, rejects original errors, and awaits declared
+  lifecycle handlers while preserving context for custom request handlers.
 - Required Alexa events to provide their own request envelope before nested
   request validation or dispatch.
 - Required Alexa events to supply their own application identity container and
