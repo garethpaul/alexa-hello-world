@@ -6,6 +6,8 @@
   request validation, authorization, or lifecycle dispatch.
 - Added missing, inherited, malformed-value, and ordering regressions plus
   mutation-sensitive baseline contracts.
+- Required every Alexa session to provide its own non-empty string `sessionId`
+  before lifecycle validation, authorization, or dispatch.
 
 ## 2026-06-13
 

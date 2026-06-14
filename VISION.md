@@ -28,6 +28,8 @@ Priority:
 - Require Alexa application IDs to be non-empty strings before dispatch
 - Require each Alexa session to own a boolean new-session flag before lifecycle
   behavior or request dispatch
+- Require each Alexa session to own a non-empty string session ID before
+  lifecycle validation, authorization, or dispatch
 - Require each Alexa request to own a non-empty string request ID before
   timestamp validation, authorization, or dispatch
 - Enforce an inclusive 150-second request timestamp freshness window before

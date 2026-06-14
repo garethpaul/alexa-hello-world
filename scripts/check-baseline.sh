@@ -50,10 +50,61 @@ for path in \
   "docs/plans/2026-06-13-alexa-ssml-speak-envelope.md" \
   "docs/plans/2026-06-14-make-root-override-protection.md" \
   "docs/plans/2026-06-14-alexa-session-new-validation.md" \
+  "docs/plans/2026-06-14-alexa-session-id-validation.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
+
+for session_id_contract in \
+  "hasOwn(event.session, 'sessionId')" \
+  "isNonEmptyString(event.session.sessionId)" \
+  "Invalid Alexa event: missing session.sessionId" \
+  "Invalid Alexa event: session.sessionId must be a non-empty string"; do
+  if ! grep -Fq "$session_id_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep session ID contract: $session_id_contract" >&2
+    exit 1
+  fi
+done
+
+session_id_line=$(grep -nF "hasOwn(event.session, 'sessionId')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+session_new_line=$(grep -nF "hasOwn(event.session, 'new')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+authorization_line=$(grep -nF "event.session.application.applicationId !== this._appId" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$session_id_line" ] || [ -z "$session_new_line" ] || [ -z "$authorization_line" ] ||
+   [ "$session_id_line" -ge "$session_new_line" ] ||
+   [ "$session_id_line" -ge "$authorization_line" ]; then
+  printf '%s\n' "AlexaSkill must validate session ID shape before lifecycle and application ID authorization." >&2
+  exit 1
+fi
+
+for session_id_test_contract in \
+  "Alexa sessions require their own session ID" \
+  "Alexa session IDs must be non-empty strings" \
+  "session ID failures do not reflect caller input into logs or failures" \
+  "session ID shape is validated before lifecycle and application authorization"; do
+  if ! grep -Fq "$session_id_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep session ID contract: $session_id_test_contract" >&2
+    exit 1
+  fi
+done
+
+for session_id_doc_contract in \
+  "$README|own non-empty string \`sessionId\`" \
+  "$SECURITY|own non-empty string \`session.sessionId\`" \
+  "$ROOT_DIR/VISION.md|Require each Alexa session to own a non-empty string session ID" \
+  "$CHANGES|own non-empty string \`sessionId\`"; do
+  session_id_doc=${session_id_doc_contract%%|*}
+  session_id_text=${session_id_doc_contract#*|}
+  if ! grep -Fq "$session_id_text" "$session_id_doc"; then
+    printf '%s\n' "$session_id_doc must document session ID validation." >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq "Status: Completed" "$DOCS_PLANS/2026-06-14-alexa-session-id-validation.md"; then
+  printf '%s\n' "Alexa session ID validation plan must record completed status." >&2
+  exit 1
+fi
 
 for deployment_contract in \
   "function requiredSkillId(value, lambdaFunctionName)" \
@@ -496,7 +547,8 @@ for plan in \
   "$DOCS_PLANS/2026-06-13-alexa-request-id-validation.md" \
   "$DOCS_PLANS/2026-06-13-alexa-request-timestamp-freshness.md" \
   "$DOCS_PLANS/2026-06-13-alexa-ssml-speak-envelope.md" \
-  "$DOCS_PLANS/2026-06-14-alexa-session-new-validation.md"; do
+  "$DOCS_PLANS/2026-06-14-alexa-session-new-validation.md" \
+  "$DOCS_PLANS/2026-06-14-alexa-session-id-validation.md"; do
   if ! grep -Fq "make check" "$plan"; then
     printf '%s\n' "$plan must document make check verification." >&2
     exit 1

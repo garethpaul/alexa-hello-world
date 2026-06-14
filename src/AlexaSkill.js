@@ -68,6 +68,16 @@ function validateEvent(event, nowMilliseconds) {
     );
   }
 
+  if (!hasOwn(event.session, 'sessionId')) {
+    throw new Error('Invalid Alexa event: missing session.sessionId');
+  }
+
+  if (!isNonEmptyString(event.session.sessionId)) {
+    throw new Error(
+      'Invalid Alexa event: session.sessionId must be a non-empty string'
+    );
+  }
+
   if (!hasOwn(event.session, 'new')) {
     throw new Error('Invalid Alexa event: missing session.new');
   }

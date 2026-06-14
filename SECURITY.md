@@ -37,6 +37,9 @@ Helpful reports include:
 - Every Alexa event must provide its own boolean `session.new` before request
   validation, authorization, or lifecycle dispatch. Caller-provided values are
   not reflected into errors or logs.
+- Every Alexa event must provide its own non-empty string `session.sessionId`
+  before lifecycle validation, authorization, or dispatch. Identifier values
+  are not reflected into logs or errors.
 - Every Alexa event must provide its own non-empty string `request.requestId`
   before timestamp validation, authorization, or dispatch. This validates the
   protocol envelope but does not provide replay detection or persistence.

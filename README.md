@@ -101,6 +101,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   dispatch, so crafted objects cannot coerce into valid handler names.
 - Every Alexa session must provide its own boolean `session.new` before request
   validation, authorization, or lifecycle dispatch.
+- Every Alexa session must provide its own non-empty string `sessionId` before
+  lifecycle validation, authorization, or dispatch.
 - Every Alexa request must provide its own non-empty string `requestId` before
   timestamp validation, authorization, or dispatch.
 - Alexa `request.timestamp` must be a valid ISO 8601 UTC value inside the

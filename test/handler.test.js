@@ -97,6 +97,14 @@ function invoke(request, options = {}) {
     event.session.new = options.sessionNew;
   }
 
+  if (Object.hasOwn(options, 'sessionId')) {
+    event.session.sessionId = options.sessionId;
+  }
+
+  if (options.omitSessionId) {
+    delete event.session.sessionId;
+  }
+
   if (options.omitSessionNew) {
     delete event.session.new;
   }
@@ -437,6 +445,86 @@ test('malformed events with non-string application ids fail before validation', 
   assertFailure(
     result,
     'Invalid Alexa event: session.application.applicationId must be a non-empty string'
+  );
+});
+
+test('Alexa sessions require their own session ID', async () => {
+  const missing = await invoke(
+    { type: 'LaunchRequest' },
+    { omitSessionId: true }
+  );
+  const inheritedSession = Object.assign(
+    Object.create({ sessionId: 'inherited-session-id' }),
+    {
+      new: true,
+      application: {
+        applicationId: 'amzn1.echo-sdk-ams.app.test'
+      },
+      attributes: {}
+    }
+  );
+  const inherited = await invokeEvent({
+    session: inheritedSession,
+    request: {
+      requestId: 'request-id',
+      timestamp: new Date().toISOString(),
+      type: 'LaunchRequest'
+    }
+  });
+
+  assertFailure(missing, 'Invalid Alexa event: missing session.sessionId');
+  assertFailure(inherited, 'Invalid Alexa event: missing session.sessionId');
+});
+
+test('Alexa session IDs must be non-empty strings', async () => {
+  for (const sessionId of ['', '   ', 0, null, {}, []]) {
+    const result = await invoke({ type: 'LaunchRequest' }, { sessionId });
+
+    assertFailure(
+      result,
+      'Invalid Alexa event: session.sessionId must be a non-empty string'
+    );
+  }
+});
+
+test('session ID failures do not reflect caller input into logs or failures', async () => {
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    {
+      captureLogs: true,
+      sessionId: {
+        toString() {
+          return 'forged-session\nforged-session-log';
+        }
+      }
+    }
+  );
+
+  assertFailure(
+    result,
+    'Invalid Alexa event: session.sessionId must be a non-empty string'
+  );
+  assert.doesNotMatch(result.error.message, /forged-session/);
+  assert.doesNotMatch(result.logs.join('\n'), /forged-session/);
+});
+
+test('session ID shape is validated before lifecycle and application authorization', async () => {
+  const configuredHandler = loadHandlerWithSkillId(
+    'amzn1.echo-sdk-ams.app.expected'
+  );
+  const result = await invoke(
+    { type: 'LaunchRequest', requestId: undefined },
+    {
+      applicationId: 'amzn1.echo-sdk-ams.app.other',
+      handler: configuredHandler,
+      sessionId: 42,
+      sessionNew: 'false'
+    }
+  );
+
+  assertFailure(
+    result,
+    'Invalid Alexa event: session.sessionId must be a non-empty string'
   );
 });
 

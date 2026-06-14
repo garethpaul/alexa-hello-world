@@ -1,6 +1,6 @@
 # Alexa Session ID Validation
 
-Status: Planned
+Status: Completed
 
 ## Context
 
@@ -46,14 +46,21 @@ completed verification in the baseline checker.
 
 ## Verification
 
-Planned:
+Completed on 2026-06-14:
 
-- Run focused session-ID tests and the full package gate.
-- Run `make check` from the repository root and an unrelated working directory.
-- Reject focused mutations that remove presence/type checks, ordering, tests,
-  security wording, or completed plan status.
-- Audit the exact diff, generated artifacts, whitespace, and credential-shaped
-  additions before committing.
+- Focused session-ID tests passed for missing, inherited, malformed, log-safety,
+  and validation-order cases.
+- The exact lockfile dependencies installed with `npm ci`; ESLint, Prettier, all
+  65 Node tests, syntax build, and the moderate dependency audit passed with
+  zero known vulnerabilities.
+- The first `make check` run passed lint, format, all 65 tests, and syntax build,
+  then stopped at the plan-evidence contract until this verification was
+  recorded; the complete gate is rerun below.
+- Full `make check` passed from the repository root and from `/tmp` through the
+  absolute Makefile path with a hostile `ROOT=/tmp` override.
+- Six isolated mutations were rejected when they weakened presence or type
+  validation, moved validation after lifecycle checks, renamed the regression,
+  removed security wording, or changed this plan back to `Status: Planned`.
 
 ## Risks
 
