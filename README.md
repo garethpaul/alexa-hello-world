@@ -82,6 +82,11 @@ Detected npm scripts:
 - Malformed Alexa `session.attributes` values are reset to an empty object
   before response session attributes are built.
 
+Use [`INTEGRATION_VERIFICATION.md`](INTEGRATION_VERIFICATION.md) for the
+exact-commit non-production Lambda and Alexa matrix. It covers configuration,
+trigger restriction, launch and intent flows, invalid requests, CloudWatch log
+redaction, rollback, and explicit unexecuted results.
+
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
 ## Configuration and Secrets
@@ -124,6 +129,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Review changes touching infrastructure, proxy, cloud, or deployment configuration; examples from the scan include .circleci/config.yml, docs/plans/2026-06-08-alexa-testability-baseline.md.
 
 ## Maintenance Notes
+
+- See `docs/plans/2026-06-14-alexa-integration-verification-checklist.md` for
+  the cloud integration evidence matrix and runtime non-claims.
 
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.

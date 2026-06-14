@@ -1,6 +1,6 @@
 # Alexa Integration Verification Checklist
 
-Status: In Progress
+Status: Completed
 
 ## Problem
 
@@ -26,4 +26,11 @@ evidence required before claiming a deployed skill works.
 
 ## Verification
 
-- Pending implementation and bounded repository validation.
+- `sh -n scripts/check-baseline.sh`, the focused baseline checker, and the
+  locked Node package gate passed.
+- Repository-root and external-working-directory `make check` passed lint,
+  formatting, tests, syntax, and portable repository contracts.
+- Twelve hostile mutations were rejected for removing checklist, configuration,
+  trigger, invocation, rejection, logging, rollback, unexecuted-result,
+  documentation, or completed-plan evidence.
+- No Lambda, IAM, Alexa developer-console, trigger, or live invocation scenario was executed; every cloud matrix row remains `not run`.

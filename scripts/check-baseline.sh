@@ -26,6 +26,7 @@ for path in \
   ".prettierignore" \
   ".prettierrc.json" \
   "CHANGES.md" \
+  "INTEGRATION_VERIFICATION.md" \
   "Makefile" \
   "README.md" \
   ".github/workflows/check.yml" \
@@ -51,9 +52,48 @@ for path in \
   "docs/plans/2026-06-14-make-root-override-protection.md" \
   "docs/plans/2026-06-14-alexa-session-new-validation.md" \
   "docs/plans/2026-06-14-alexa-session-id-validation.md" \
+  "docs/plans/2026-06-14-alexa-integration-verification-checklist.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
+done
+
+for integration_contract in \
+  'commit SHA and pull request' \
+  'ALEXA_SKILL_ID' \
+  'Trigger restricted' \
+  'Launch request' \
+  'Session ended request' \
+  'stale, future, or malformed timestamps' \
+  'Do not convert `not run` into passing evidence.' \
+  'request IDs, session IDs, utterances' \
+  'known-good version' \
+  'every Lambda and Alexa integration row as' \
+  'unexecuted'; do
+  if ! grep -Fq "$integration_contract" "$ROOT_DIR/INTEGRATION_VERIFICATION.md"; then
+    printf '%s\n' "Integration checklist must keep contract: $integration_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq 'INTEGRATION_VERIFICATION.md' "$README" || \
+   ! grep -Fq 'explicit unexecuted results' "$README" || \
+   ! grep -Fqi 'integration matrix' "$ROOT_DIR/VISION.md" || \
+   ! grep -Fq 'every cloud row explicitly unexecuted' "$CHANGES"; then
+  printf '%s\n' 'Repository guidance must document the unexecuted Alexa integration matrix.' >&2
+  exit 1
+fi
+
+for integration_plan_contract in \
+  'Status: Completed' \
+  'make check' \
+  'hostile mutations' \
+  'No Lambda, IAM, Alexa developer-console, trigger, or live invocation scenario was executed'; do
+  if ! grep -Fq "$integration_plan_contract" \
+    "$DOCS_PLANS/2026-06-14-alexa-integration-verification-checklist.md"; then
+    printf '%s\n' "Integration plan must preserve completion evidence: $integration_plan_contract" >&2
+    exit 1
+  fi
 done
 
 for session_id_contract in \

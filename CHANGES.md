@@ -8,6 +8,9 @@
   mutation-sensitive baseline contracts.
 - Required every Alexa session to provide its own non-empty string `sessionId`
   before lifecycle validation, authorization, or dispatch.
+- Added an exact-commit non-production Lambda and Alexa integration matrix for
+  configuration, invocations, rejection paths, redacted logs, and rollback,
+  with every cloud row explicitly unexecuted.
 
 ## 2026-06-13
 
