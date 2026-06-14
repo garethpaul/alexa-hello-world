@@ -25,7 +25,7 @@ Priority:
 - Require a non-empty `ALEXA_SKILL_ID` when AWS Lambda runtime markers are
   present so deployed authorization fails closed
 - Keep malformed Alexa event failures explicit and locally testable
-- Require Alexa application IDs to be non-empty strings before dispatch
+- Require each event to own application identity fields before authorization
 - Require each Alexa session to own a boolean new-session flag before lifecycle
   behavior or request dispatch
 - Require each Alexa session to own a non-empty string session ID before

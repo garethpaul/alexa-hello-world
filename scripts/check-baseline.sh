@@ -53,9 +53,63 @@ for path in \
   "docs/plans/2026-06-14-alexa-session-new-validation.md" \
   "docs/plans/2026-06-14-alexa-session-id-validation.md" \
   "docs/plans/2026-06-14-alexa-integration-verification-checklist.md" \
+  "docs/plans/2026-06-14-alexa-application-identity-ownership.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
+done
+
+for application_identity_contract in \
+  "hasOwn(event, 'session')" \
+  "hasOwn(event.session, 'application')" \
+  "hasOwn(event.session.application, 'applicationId')" \
+  "Invalid Alexa event: missing session.application.applicationId"; do
+  if ! grep -Fq "$application_identity_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep application identity ownership: $application_identity_contract" >&2
+    exit 1
+  fi
+done
+
+application_identity_line=$(grep -nF "hasOwn(event, 'session')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+request_id_line=$(grep -nF "hasOwn(event.request, 'requestId')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$application_identity_line" ] || [ -z "$request_id_line" ] || \
+   [ "$application_identity_line" -ge "$request_id_line" ]; then
+  printf '%s\n' "AlexaSkill must validate application identity ownership before request metadata." >&2
+  exit 1
+fi
+
+for application_identity_test_contract in \
+  "Alexa application identity fields must be own properties" \
+  "Object.create({ session: validSession })" \
+  "application: { applicationId: inheritedIdentity }" \
+  "applicationId: inheritedIdentity" \
+  "assert.doesNotMatch(logText, /forged-inherited/)"; do
+  if ! grep -Fq "$application_identity_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep application identity ownership: $application_identity_test_contract" >&2
+    exit 1
+  fi
+done
+
+for application_identity_document in \
+  "$README" \
+  "$SECURITY" \
+  "$ROOT_DIR/VISION.md" \
+  "$CHANGES"; do
+  if ! grep -Fq "own application identity" "$application_identity_document"; then
+    printf '%s\n' "$application_identity_document must document own application identity fields." >&2
+    exit 1
+  fi
+done
+
+for application_identity_plan_contract in \
+  "Status: Completed" \
+  "make check" \
+  "mutations"; do
+  if ! grep -Fqi "$application_identity_plan_contract" \
+    "$DOCS_PLANS/2026-06-14-alexa-application-identity-ownership.md"; then
+    printf '%s\n' "Application identity plan must keep completion evidence: $application_identity_plan_contract" >&2
+    exit 1
+  fi
 done
 
 for integration_contract in \

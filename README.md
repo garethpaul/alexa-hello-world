@@ -100,8 +100,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
   or incoming application IDs.
 - Top-level handler failures use a generic log message while preserving the
   original stack-bearing `Error` for Lambda failure handling.
-- Alexa `session.application.applicationId` values must be non-empty strings
-  before optional skill-id comparison or request dispatch.
+- Alexa events must provide their own application identity chain through a
+  non-empty string `session.application.applicationId` before optional skill-id
+  comparison or request dispatch.
 - Alexa `request.type` and `intent.name` values must be non-empty strings before
   dispatch, so crafted objects cannot coerce into valid handler names.
 - Every Alexa session must provide its own boolean `session.new` before request

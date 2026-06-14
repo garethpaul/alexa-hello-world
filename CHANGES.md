@@ -2,6 +2,8 @@
 
 ## 2026-06-14
 
+- Required Alexa events to supply their own application identity container and
+  identifier properties before skill-ID authorization.
 - Required every Alexa session to provide its own boolean `session.new` before
   request validation, authorization, or lifecycle dispatch.
 - Added missing, inherited, malformed-value, and ordering regressions plus

@@ -1,6 +1,6 @@
 # Alexa Application Identity Ownership
 
-Status: Planned
+Status: Completed
 
 ## Context
 
@@ -59,11 +59,18 @@ documentation, and completed verification evidence.
 
 ## Verification
 
-To be recorded after implementation:
+Completed on 2026-06-14:
 
-- Focused Node test-name-pattern execution.
-- Full package and external-directory `make check` gates.
-- Isolated source, test, ordering, documentation, and plan mutations.
+- The focused application-identity test pattern passed six matching tests,
+  including all three inherited identity-container boundaries.
+- `npm ci --ignore-scripts` installed the exact lockfile with zero reported
+  vulnerabilities; ESLint 10.4.1, Prettier, all 66 Node tests, and both syntax
+  builds passed.
+- Full `make check` passed from the repository root and from `/tmp` through the
+  absolute Makefile path with a hostile `ROOT=/tmp` override.
+- Eight isolated mutations were rejected when they removed any ownership
+  guard, moved ownership validation behind request metadata, removed focused
+  inherited-input coverage, removed documentation, or reopened this plan.
 
 ## Risks
 

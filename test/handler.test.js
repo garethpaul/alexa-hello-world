@@ -448,6 +448,56 @@ test('malformed events with non-string application ids fail before validation', 
   );
 });
 
+test('Alexa application identity fields must be own properties', async () => {
+  const inheritedIdentity = 'forged-inherited-application-id';
+  const request = {
+    requestId: 'request-id',
+    timestamp: new Date().toISOString(),
+    type: 'LaunchRequest'
+  };
+  const validSession = {
+    new: true,
+    sessionId: 'session-id',
+    application: { applicationId: 'amzn1.echo-sdk-ams.app.test' },
+    attributes: {}
+  };
+  const inheritedSessionEvent = Object.assign(
+    Object.create({ session: validSession }),
+    { request }
+  );
+  const inheritedApplicationSession = Object.assign(
+    Object.create({
+      application: { applicationId: inheritedIdentity }
+    }),
+    { new: true, sessionId: 'session-id', attributes: {} }
+  );
+  const inheritedApplicationId = Object.create({
+    applicationId: inheritedIdentity
+  });
+  const inheritedApplicationIdSession = {
+    new: true,
+    sessionId: 'session-id',
+    application: inheritedApplicationId,
+    attributes: {}
+  };
+
+  for (const event of [
+    inheritedSessionEvent,
+    { session: inheritedApplicationSession, request },
+    { session: inheritedApplicationIdSession, request }
+  ]) {
+    const result = await invokeEvent(event, { captureLogs: true });
+    const logText = result.logs.join('\n');
+
+    assertFailure(
+      result,
+      'Invalid Alexa event: missing session.application.applicationId'
+    );
+    assert.doesNotMatch(result.error.message, /forged-inherited/);
+    assert.doesNotMatch(logText, /forged-inherited/);
+  }
+});
+
 test('Alexa sessions require their own session ID', async () => {
   const missing = await invoke(
     { type: 'LaunchRequest' },

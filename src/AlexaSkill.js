@@ -53,9 +53,11 @@ function parseRequestTimestamp(timestamp) {
 function validateEvent(event, nowMilliseconds) {
   if (
     !event ||
+    !hasOwn(event, 'session') ||
     !event.session ||
+    !hasOwn(event.session, 'application') ||
     !event.session.application ||
-    !event.session.application.applicationId
+    !hasOwn(event.session.application, 'applicationId')
   ) {
     throw new Error(
       'Invalid Alexa event: missing session.application.applicationId'
