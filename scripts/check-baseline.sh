@@ -58,6 +58,7 @@ for path in \
   "docs/plans/2026-06-14-alexa-request-envelope-ownership.md" \
   "docs/plans/2026-06-14-alexa-async-handler.md" \
   "docs/plans/2026-06-15-alexa-event-handler-ownership.md" \
+  "docs/plans/2026-06-15-alexa-intent-envelope-ownership.md" \
   "docs/plans/2026-06-15-alexa-session-attributes-ownership.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
@@ -69,6 +70,61 @@ for async_index_contract in \
   "return helloWorld.execute(event, context);"; do
   if ! grep -Fq "$async_index_contract" "$INDEX"; then
     printf '%s\n' "Lambda entry point must keep async return contract: $async_index_contract" >&2
+    exit 1
+  fi
+done
+
+for intent_envelope_contract in \
+  "!hasOwn(intentRequest, 'intent') ||" \
+  "!hasOwn(intentRequest.intent, 'name')" \
+  "Invalid intent request: missing intent.name"; do
+  if ! grep -Fq "$intent_envelope_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep intent envelope ownership: $intent_envelope_contract" >&2
+    exit 1
+  fi
+done
+
+intent_envelope_line=$(grep -nF "!hasOwn(intentRequest, 'intent')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+intent_name_line=$(grep -nF "!hasOwn(intentRequest.intent, 'name')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$intent_envelope_line" ] || [ -z "$intent_name_line" ] || \
+   [ "$intent_envelope_line" -ge "$intent_name_line" ]; then
+  printf '%s\n' "AlexaSkill must validate intent envelope ownership before intent.name ownership." >&2
+  exit 1
+fi
+
+intent_envelope_test_body=$(awk '
+  /^test.*inherited intent envelopes are rejected before dispatch/ { capture = 1 }
+  capture && found && /^test\(/ { exit }
+  capture { print; found = 1 }
+' "$ROOT_DIR/test/handler.test.js")
+
+for intent_envelope_test_contract in \
+  "inherited intent envelopes are rejected before dispatch" \
+  "const request = Object.create({" \
+  "intent: { name: 'HelloWorldIntent' }" \
+  "assertFailure(result, 'Invalid intent request: missing intent.name');"; do
+  if ! printf '%s\n' "$intent_envelope_test_body" | grep -Fq "$intent_envelope_test_contract"; then
+    printf '%s\n' "Handler tests must keep intent envelope ownership: $intent_envelope_test_contract" >&2
+    exit 1
+  fi
+done
+
+intent_envelope_guidance='Intent requests must own their intent envelope before intent names are trusted.'
+for guidance_path in README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$intent_envelope_guidance" "$ROOT_DIR/$guidance_path"; then
+    printf '%s\n' "$guidance_path must document intent envelope ownership." >&2
+    exit 1
+  fi
+done
+
+for intent_envelope_plan_contract in \
+  "status: completed" \
+  "make check" \
+  "hostile mutations" \
+  "No live Lambda or Alexa invocation was performed"; do
+  if ! grep -Fqi "$intent_envelope_plan_contract" \
+    "$DOCS_PLANS/2026-06-15-alexa-intent-envelope-ownership.md"; then
+    printf '%s\n' "Intent-envelope ownership plan must keep completion evidence: $intent_envelope_plan_contract" >&2
     exit 1
   fi
 done

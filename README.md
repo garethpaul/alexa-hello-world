@@ -111,6 +111,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
   comparison or request dispatch.
 - Alexa events must provide their own request envelope before request type, ID,
   timestamp, or handler dispatch is evaluated.
+- Intent requests must own their intent envelope before intent names are trusted.
 - Alexa `request.type` and `intent.name` values must be non-empty strings before
   dispatch, so crafted objects cannot coerce into valid handler names.
 - Every Alexa session must provide its own boolean `session.new` before request

@@ -27,6 +27,7 @@ Priority:
 - Keep malformed Alexa event failures explicit and locally testable
 - Require each event to own application identity fields before authorization
 - Require each event to own request envelope state before validation or dispatch
+- Intent requests must own their intent envelope before intent names are trusted.
 - Require each Alexa session to own a boolean new-session flag before lifecycle
   behavior or request dispatch
 - Require each Alexa session to own a non-empty string session ID before

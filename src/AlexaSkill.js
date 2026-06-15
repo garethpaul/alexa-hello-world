@@ -199,7 +199,11 @@ AlexaSkill.prototype.eventHandlers = {
    * Called when the user specifies an intent.
    */
   onIntent: function (intentRequest, session, response) {
-    if (!intentRequest.intent || !hasOwn(intentRequest.intent, 'name')) {
+    if (
+      !hasOwn(intentRequest, 'intent') ||
+      !intentRequest.intent ||
+      !hasOwn(intentRequest.intent, 'name')
+    ) {
       throw new Error('Invalid intent request: missing intent.name');
     }
 

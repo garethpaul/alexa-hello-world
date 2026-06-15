@@ -45,6 +45,7 @@ Helpful reports include:
   identifier properties fail before authorization.
 - Every Alexa event must provide its own request envelope before nested request
   fields or dispatch are trusted.
+- Intent requests must own their intent envelope before intent names are trusted.
 - Every Alexa event must provide its own non-empty string `session.sessionId`
   before lifecycle validation, authorization, or dispatch. Identifier values
   are not reflected into logs or errors.

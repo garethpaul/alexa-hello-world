@@ -1103,6 +1103,29 @@ test('malformed intent requests fail with a clear message', async () => {
   assertFailure(result, 'Invalid intent request: missing intent.name');
 });
 
+test('inherited intent envelopes are rejected before dispatch', async () => {
+  const request = Object.create({
+    intent: { name: 'HelloWorldIntent' }
+  });
+  request.type = 'IntentRequest';
+  request.requestId = 'request-id';
+  request.timestamp = new Date().toISOString();
+
+  const result = await invokeEvent({
+    session: {
+      new: true,
+      sessionId: 'session-id',
+      application: {
+        applicationId: 'amzn1.echo-sdk-ams.app.test'
+      },
+      attributes: {}
+    },
+    request
+  });
+
+  assertFailure(result, 'Invalid intent request: missing intent.name');
+});
+
 test('malformed intent requests with non-string names fail before dispatch', async () => {
   const result = await invoke({
     type: 'IntentRequest',

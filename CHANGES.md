@@ -2,6 +2,7 @@
 
 ## 2026-06-15
 
+- Intent requests must own their intent envelope before intent names are trusted.
 - Only owned Alexa session attributes are preserved. Missing, inherited, or
   malformed values are reset to an empty object before responses are built.
 - Registered sample lifecycle behavior through a subclass-owned lifecycle handler table,

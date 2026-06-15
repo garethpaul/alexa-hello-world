@@ -1,7 +1,7 @@
 ---
 title: Alexa Intent Envelope Ownership
 type: security
-status: planned
+status: completed
 date: 2026-06-15
 ---
 
@@ -68,6 +68,22 @@ guidance, completed status, and verification evidence.
   plan-completion mutations.
 - Audit the exact intended paths, generated artifacts, conflict markers,
   dependency/workflow drift, whitespace, and credential-shaped additions.
+
+## Completion Evidence
+
+- Added an own-property check for `intentRequest.intent` before any nested
+  `intent.name` read while preserving the existing stable validation failure.
+- Added an inherited-envelope regression; all 74 Node handler tests passed.
+- The lockfile-installed ESLint 10.4.1 lint gate, Prettier check, syntax build,
+  and `npm audit --omit=dev` passed with zero reported vulnerabilities.
+- Twelve hostile mutations were rejected for missing or weakened source
+  ownership, weakened inherited fixtures or assertions, missing maintained
+  guidance, incomplete plan evidence, and runtime guard removal.
+- The SDK-free baseline checker and repository-root and external-directory
+  `make check` gates passed.
+- Exact-path diff, generated-artifact, conflict-marker, whitespace, dependency
+  drift, and credential-shaped-addition audits passed.
+- No live Lambda or Alexa invocation was performed.
 
 ## Scope Boundaries
 
