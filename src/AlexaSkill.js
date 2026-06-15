@@ -282,10 +282,6 @@ AlexaSkill.prototype.execute = async function (event, context) {
       });
     }
 
-    if (event.session.new) {
-      await this.eventHandlers.onSessionStarted(event.request, event.session);
-    }
-
     // Route the request to the proper handler which may have been overriden.
     var requestHandler = hasOwn(this.requestHandlers, event.request.type)
       ? this.requestHandlers[event.request.type]
@@ -293,6 +289,11 @@ AlexaSkill.prototype.execute = async function (event, context) {
     if (!requestHandler) {
       throw new Error('Unsupported request type');
     }
+
+    if (event.session.new) {
+      await this.eventHandlers.onSessionStarted(event.request, event.session);
+    }
+
     return await requestHandler.call(
       this,
       event,

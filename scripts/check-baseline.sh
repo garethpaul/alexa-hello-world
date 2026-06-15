@@ -953,6 +953,47 @@ for locale_plan_contract in \
   fi
 done
 
+unsupported_handler_line=$(grep -nF "var requestHandler = hasOwn(this.requestHandlers, event.request.type)" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+session_start_line=$(grep -nF "await this.eventHandlers.onSessionStarted(event.request, event.session);" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$unsupported_handler_line" ] || [ -z "$session_start_line" ] || \
+   [ "$unsupported_handler_line" -ge "$session_start_line" ]; then
+  printf '%s\n' "AlexaSkill must reject unsupported request types before session-start lifecycle hooks." >&2
+  exit 1
+fi
+
+for unsupported_lifecycle_test_contract in \
+  "unsupported request types fail with a clear message" \
+  "{ captureLogs: true }" \
+  "const unsupportedRequestLogs = result.logs.join('\\n');" \
+  "assert.doesNotMatch(unsupportedRequestLogs, /onSessionStarted/);"; do
+  if ! grep -Fq "$unsupported_lifecycle_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep unsupported-request lifecycle coverage: $unsupported_lifecycle_test_contract" >&2
+    exit 1
+  fi
+done
+
+unsupported_lifecycle_guidance='Unsupported request types are rejected before session-start lifecycle hooks.'
+for unsupported_lifecycle_guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$unsupported_lifecycle_guidance" "$ROOT_DIR/$unsupported_lifecycle_guidance_path"; then
+    printf '%s\n' "$unsupported_lifecycle_guidance_path must document unsupported-request lifecycle ordering." >&2
+    exit 1
+  fi
+done
+
+for unsupported_lifecycle_plan_contract in \
+  'status: completed' \
+  'unsupported request types fail with a clear message' \
+  '81 tests' \
+  'make check' \
+  'isolated hostile mutations' \
+  'credential-shaped additions'; do
+  if ! grep -Fqi "$unsupported_lifecycle_plan_contract" \
+    "$DOCS_PLANS/2026-06-15-alexa-unsupported-request-lifecycle.md"; then
+    printf '%s\n' "Unsupported-request lifecycle plan must keep completion evidence: $unsupported_lifecycle_plan_contract" >&2
+    exit 1
+  fi
+done
+
 for package_contract in \
   '"type": "commonjs"' \
   '"node": ">=20.19"' \

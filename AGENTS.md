@@ -68,6 +68,7 @@
   so loading `src/index.js` cannot mutate reusable `AlexaSkill` defaults.
 - Alexa events must own an exact `version: "1.0"` protocol field before nested request validation.
 - Every Alexa request must own a non-empty string `request.locale` before lifecycle behavior, authorization, or dispatch.
+- Unsupported request types are rejected before session-start lifecycle hooks.
 - Only owned Alexa session attributes are preserved. Missing, inherited, or
   malformed values are reset to an empty object before responses are built.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.

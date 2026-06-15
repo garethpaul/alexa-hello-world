@@ -1,7 +1,7 @@
 ---
 title: Reject Unsupported Alexa Requests Before Lifecycle Hooks
 type: security
-status: in_progress
+status: completed
 date: 2026-06-15
 ---
 
@@ -69,3 +69,20 @@ status, and actual verification evidence.
   `onSessionStarted` will now fail earlier; handler tables are expected to be
   configured before execution.
 - No live Lambda or Alexa invocation is performed.
+
+## Completion Evidence
+
+- Moved own-property request-handler resolution and unsupported-type rejection
+  before `onSessionStarted` while preserving supported dispatch behavior.
+- Extended `unsupported request types fail with a clear message` to prove the
+  generic failure occurs without a session-start lifecycle log.
+- All 81 tests passed.
+- Lockfile-installed ESLint 10.4.1, Prettier, syntax build, and
+  `npm audit --omit=dev` passed with zero reported vulnerabilities.
+- Repository-root `make check` passed all 81 tests, lint, formatting, syntax
+  build, and the SDK-free baseline checker.
+- Five isolated hostile mutations covering source ordering, the scoped
+  regression, guidance, plan status, and verification evidence were rejected.
+- External-directory `make check` passed through the absolute Makefile path.
+- Exact nine-path, generated-artifact, file-mode, whitespace, conflict-marker,
+  dependency/workflow drift, and credential-shaped additions audits passed.

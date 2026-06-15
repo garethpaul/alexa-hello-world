@@ -124,6 +124,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Alexa `request.timestamp` must be a valid ISO 8601 UTC value inside the
   inclusive 150-second freshness window before authorization or dispatch.
 - Every Alexa request must own a non-empty string `request.locale` before lifecycle behavior, authorization, or dispatch.
+- Unsupported request types are rejected before session-start lifecycle hooks.
 - Rejected dispatch names are not included in failure diagnostics or logs,
   preventing embedded control characters from forging log entries.
 - Primary and reprompt speech are validated before response construction.

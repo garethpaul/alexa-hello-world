@@ -580,9 +580,14 @@ test('unsupported intent names are not reflected into logs or failures', async (
 });
 
 test('unsupported request types fail with a clear message', async () => {
-  const result = await invoke({ type: 'AudioPlayer.PlaybackStarted' });
+  const result = await invoke(
+    { type: 'AudioPlayer.PlaybackStarted' },
+    { captureLogs: true }
+  );
+  const unsupportedRequestLogs = result.logs.join('\n');
 
   assertFailure(result, 'Unsupported request type');
+  assert.doesNotMatch(unsupportedRequestLogs, /onSessionStarted/);
 });
 
 test('inherited request type names are not dispatched', async () => {
