@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-15
+
+- Registered sample lifecycle behavior through a subclass-owned lifecycle handler table,
+  preventing module load from replacing reusable `AlexaSkill` defaults.
+- Added a load-time regression and mutation-sensitive portable contracts for
+  lifecycle handler ownership and registration ordering.
+
 ## 2026-06-14
 
 - Replaced legacy Lambda context completion with a promise-returning Lambda

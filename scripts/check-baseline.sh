@@ -57,6 +57,7 @@ for path in \
   "docs/plans/2026-06-14-alexa-application-identity-ownership.md" \
   "docs/plans/2026-06-14-alexa-request-envelope-ownership.md" \
   "docs/plans/2026-06-14-alexa-async-handler.md" \
+  "docs/plans/2026-06-15-alexa-event-handler-ownership.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
@@ -124,6 +125,57 @@ for async_plan_contract in \
   if ! grep -Fqi "$async_plan_contract" \
     "$DOCS_PLANS/2026-06-14-alexa-async-handler.md"; then
     printf '%s\n' "Async Lambda plan must keep completion evidence: $async_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for event_handler_ownership_contract in \
+  "HelloWorld.prototype.eventHandlers = Object.create(" \
+  "AlexaSkill.prototype.eventHandlers"; do
+  if ! grep -Fq "$event_handler_ownership_contract" "$INDEX"; then
+    printf '%s\n' "HelloWorld must own its lifecycle handler table: $event_handler_ownership_contract" >&2
+    exit 1
+  fi
+done
+
+event_handler_table_line=$(grep -nF "HelloWorld.prototype.eventHandlers = Object.create(" "$INDEX" | head -n 1 | cut -d: -f1)
+event_handler_registration_line=$(grep -nF "HelloWorld.prototype.eventHandlers.onSessionStarted" "$INDEX" | head -n 1 | cut -d: -f1)
+if [ -z "$event_handler_table_line" ] || [ -z "$event_handler_registration_line" ] || \
+   [ "$event_handler_table_line" -ge "$event_handler_registration_line" ]; then
+  printf '%s\n' "HelloWorld must establish lifecycle handler ownership before registration." >&2
+  exit 1
+fi
+
+for event_handler_ownership_test_contract in \
+  "sample lifecycle handlers do not mutate the AlexaSkill prototype" \
+  "assert.equal(AlexaSkill.prototype.eventHandlers, baseEventHandlers)" \
+  "baseLifecycleHandlers.onSessionStarted"; do
+  if ! grep -Fq "$event_handler_ownership_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must preserve lifecycle table ownership: $event_handler_ownership_test_contract" >&2
+    exit 1
+  fi
+done
+
+for event_handler_ownership_document in \
+  "$ROOT_DIR/AGENTS.md" \
+  "$README" \
+  "$SECURITY" \
+  "$ROOT_DIR/VISION.md" \
+  "$CHANGES"; do
+  if ! grep -Fq "subclass-owned lifecycle handler table" "$event_handler_ownership_document"; then
+    printf '%s\n' "$event_handler_ownership_document must document lifecycle handler ownership." >&2
+    exit 1
+  fi
+done
+
+for event_handler_ownership_plan_contract in \
+  "status: completed" \
+  "make check" \
+  "hostile mutations" \
+  "No live Lambda or Alexa invocation was performed"; do
+  if ! grep -Fqi "$event_handler_ownership_plan_contract" \
+    "$DOCS_PLANS/2026-06-15-alexa-event-handler-ownership.md"; then
+    printf '%s\n' "Event-handler ownership plan must keep completion evidence: $event_handler_ownership_plan_contract" >&2
     exit 1
   fi
 done

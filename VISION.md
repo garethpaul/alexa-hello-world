@@ -46,6 +46,8 @@ Priority:
   Lambda failures or logs
 - Use a promise-returning Lambda handler and await declared lifecycle work
   before completing an invocation
+- Register sample behavior through a subclass-owned lifecycle handler table so
+  reusable base lifecycle defaults remain stable
 - Return stack-bearing `Error` objects for validation and dispatch failures
 - Validate primary and reprompt speech before constructing Alexa responses
 - Keep direct-response SSML speak envelopes validated in the shared primary

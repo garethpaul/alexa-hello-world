@@ -64,6 +64,8 @@
   `Error` objects and must not be reflected into logs or Lambda failure values.
 - Primary and reprompt speech must be non-empty strings or `PlainText`/`SSML`
   option objects before response construction.
+- Register sample lifecycle behavior on a subclass-owned lifecycle handler table
+  so loading `src/index.js` cannot mutate reusable `AlexaSkill` defaults.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

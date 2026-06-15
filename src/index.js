@@ -51,6 +51,9 @@ var HelloWorld = function () {
 // Extend AlexaSkill
 HelloWorld.prototype = Object.create(AlexaSkill.prototype);
 HelloWorld.prototype.constructor = HelloWorld;
+HelloWorld.prototype.eventHandlers = Object.create(
+  AlexaSkill.prototype.eventHandlers
+);
 
 HelloWorld.prototype.eventHandlers.onSessionStarted = function (
   sessionStartedRequest,

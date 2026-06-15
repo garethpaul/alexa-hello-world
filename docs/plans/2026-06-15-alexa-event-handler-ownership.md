@@ -1,7 +1,7 @@
 ---
 title: Alexa Event Handler Ownership
 type: reliability
-status: planned
+status: completed
 date: 2026-06-15
 ---
 
@@ -66,6 +66,19 @@ the reusable base skill behavior.
   the regression or baseline contract.
 - Audit the exact diff, generated artifacts, whitespace, and changed lines for
   credential material before committing.
+
+## Completion Evidence
+
+- `node --test test/handler.test.js` passed all 72 handler tests, including the
+  new load-time prototype-ownership regression.
+- `npm run lint`, `npm run format:check`, and `npm run build` passed with the
+  lockfile-installed toolchain.
+- `make check` passed from the repository root and through the absolute
+  Makefile path from an external directory.
+- Five hostile mutations were rejected for missing ownership, late ownership,
+  weakened regression assertions, missing documentation, and incomplete plan
+  status.
+- No live Lambda or Alexa invocation was performed.
 
 ## Risks And Mitigations
 

@@ -4,6 +4,12 @@ const test = require('node:test');
 delete process.env.ALEXA_SKILL_ID;
 delete process.env.AWS_LAMBDA_FUNCTION_NAME;
 const AlexaSkill = require('../src/AlexaSkill');
+const baseEventHandlers = AlexaSkill.prototype.eventHandlers;
+const baseLifecycleHandlers = {
+  onSessionStarted: baseEventHandlers.onSessionStarted,
+  onLaunch: baseEventHandlers.onLaunch,
+  onSessionEnded: baseEventHandlers.onSessionEnded
+};
 const { configuredSkillId, requiredSkillId, handler } = require('../src/index');
 
 function restoreEnvironment(name, value) {
@@ -158,6 +164,22 @@ function invokeAskResponse(output, reprompt) {
     { handler: responseHandler(output, reprompt, true) }
   );
 }
+
+test('sample lifecycle handlers do not mutate the AlexaSkill prototype', () => {
+  assert.equal(AlexaSkill.prototype.eventHandlers, baseEventHandlers);
+  assert.equal(
+    AlexaSkill.prototype.eventHandlers.onSessionStarted,
+    baseLifecycleHandlers.onSessionStarted
+  );
+  assert.equal(
+    AlexaSkill.prototype.eventHandlers.onLaunch,
+    baseLifecycleHandlers.onLaunch
+  );
+  assert.equal(
+    AlexaSkill.prototype.eventHandlers.onSessionEnded,
+    baseLifecycleHandlers.onSessionEnded
+  );
+});
 
 test('launch request returns welcome prompt and keeps the session open', async () => {
   const result = await invoke({ type: 'LaunchRequest' });

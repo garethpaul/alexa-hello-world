@@ -102,6 +102,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   original stack-bearing `Error` as a rejected promise.
 - The promise-returning Lambda handler resolves with the existing Alexa
   response payload while preserving Lambda context for custom request handlers.
+- The sample registers lifecycle behavior on a subclass-owned lifecycle handler table,
+  leaving reusable `AlexaSkill` prototype defaults unchanged at module load.
 - Alexa events must provide their own application identity chain through a
   non-empty string `session.application.applicationId` before optional skill-id
   comparison or request dispatch.

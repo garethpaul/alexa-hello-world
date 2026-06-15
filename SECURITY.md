@@ -60,6 +60,8 @@ Helpful reports include:
 - Top-level Alexa execution logs must remain generic and must not duplicate an
   error message or stack into routine logs.
 - The promise-returning Lambda handler rejects caught `Error` objects unchanged.
+- Sample lifecycle registration uses a subclass-owned lifecycle handler table
+  so loading the Lambda entry point cannot replace reusable base handlers.
 - AWS Lambda deployments must configure a non-empty `ALEXA_SKILL_ID`; module
   initialization fails before exporting an unguarded handler when the
   runtime-provided function name is present and the authorization identifier is
