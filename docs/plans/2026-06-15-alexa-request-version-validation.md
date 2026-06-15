@@ -1,7 +1,7 @@
 ---
 title: Alexa Request Version Validation
 type: security
-status: planned
+status: completed
 date: 2026-06-15
 ---
 
@@ -82,6 +82,26 @@ evidence.
   documentation, and plan-completion mutations.
 - Audit exact intended paths, generated artifacts, conflict markers,
   dependency/workflow drift, whitespace, and credential-shaped additions.
+
+## Completion Evidence
+
+- Added an own-property boundary for the top-level request `version` before
+  nested session or request reads and required the exact supported string
+  value `"1.0"` with stable field-specific failures.
+- Added missing, inherited, blank, non-string, unsupported-value, and
+  unknown-additional-property regressions while preserving all existing
+  behavior; all 77 tests in the Node handler suite passed.
+- The lockfile-installed ESLint 10.4.1 lint gate, Prettier check, syntax build,
+  and `npm audit --omit=dev` passed with zero reported vulnerabilities.
+- Nine isolated hostile mutations were rejected for weakened ownership, value,
+  validation ordering, runtime behavior, fixture identity, inherited-input,
+  unknown-field compatibility, maintained-guidance, and plan-completion
+  contracts.
+- The SDK-free baseline checker and repository-root and external-directory
+  `make check` gates passed.
+- Exact-path diff, generated-artifact, conflict-marker, whitespace, dependency
+  drift, and credential-shaped-addition audits passed.
+- No live Lambda or Alexa invocation was performed.
 
 ## Risks
 

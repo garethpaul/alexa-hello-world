@@ -59,10 +59,67 @@ for path in \
   "docs/plans/2026-06-14-alexa-async-handler.md" \
   "docs/plans/2026-06-15-alexa-event-handler-ownership.md" \
   "docs/plans/2026-06-15-alexa-intent-envelope-ownership.md" \
+  "docs/plans/2026-06-15-alexa-request-version-validation.md" \
   "docs/plans/2026-06-15-alexa-session-attributes-ownership.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
+done
+
+for version_contract in \
+  "!event || !hasOwn(event, 'version')" \
+  "Invalid Alexa event: missing version" \
+  "event.version !== '1.0'" \
+  "Invalid Alexa event: version must be 1.0"; do
+  if ! grep -Fq "$version_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep request version validation: $version_contract" >&2
+    exit 1
+  fi
+done
+
+version_ownership_line=$(grep -nF "!event || !hasOwn(event, 'version')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+version_value_line=$(grep -nF "event.version !== '1.0'" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+session_ownership_line=$(grep -nF "!hasOwn(event, 'session')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$version_ownership_line" ] || [ -z "$version_value_line" ] || \
+   [ -z "$session_ownership_line" ] || \
+   [ "$version_ownership_line" -ge "$version_value_line" ] || \
+   [ "$version_value_line" -ge "$session_ownership_line" ]; then
+  printf '%s\n' "AlexaSkill must validate version ownership and value before nested event fields." >&2
+  exit 1
+fi
+
+for version_test_contract in \
+  "Alexa request envelopes require their own protocol version" \
+  "Object.create({ version: '1.0' })" \
+  "Alexa request envelope versions must use supported value 1.0" \
+  "['', '   ', 1, null, {}, [], '2.0']" \
+  "Alexa request envelopes tolerate unknown additional properties" \
+  "futureEnvelopeProperty: { ignored: true }"; do
+  if ! grep -Fq "$version_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep request version coverage: $version_test_contract" >&2
+    exit 1
+  fi
+done
+
+version_guidance='Alexa events must own an exact `version: "1.0"` protocol field before nested request validation.'
+for guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$version_guidance" "$ROOT_DIR/$guidance_path"; then
+    printf '%s\n' "$guidance_path must document request version validation." >&2
+    exit 1
+  fi
+done
+
+for version_plan_contract in \
+  "status: completed" \
+  "77 tests" \
+  "make check" \
+  "hostile mutations" \
+  "No live Lambda or Alexa invocation was performed"; do
+  if ! grep -Fqi "$version_plan_contract" \
+    "$DOCS_PLANS/2026-06-15-alexa-request-version-validation.md"; then
+    printf '%s\n' "Request-version plan must keep completion evidence: $version_plan_contract" >&2
+    exit 1
+  fi
 done
 
 for async_index_contract in \

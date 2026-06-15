@@ -72,6 +72,7 @@ function invokeEvent(event, options = {}) {
 
 function invoke(request, options = {}) {
   const event = {
+    version: Object.hasOwn(options, 'version') ? options.version : '1.0',
     session: {
       new: true,
       sessionId: 'session-id',
@@ -91,6 +92,10 @@ function invoke(request, options = {}) {
 
   if (options.omitTimestamp) {
     delete event.request.timestamp;
+  }
+
+  if (options.omitVersion) {
+    delete event.version;
   }
 
   if (options.omitRequestId) {
@@ -115,6 +120,68 @@ function invoke(request, options = {}) {
 
   return invokeEvent(event, options);
 }
+
+test('Alexa request envelopes require their own protocol version', async () => {
+  const missing = await invoke(
+    { type: 'LaunchRequest' },
+    { omitVersion: true }
+  );
+  const inheritedEvent = Object.assign(Object.create({ version: '1.0' }), {
+    session: {
+      new: true,
+      sessionId: 'session-id',
+      application: {
+        applicationId: 'amzn1.echo-sdk-ams.app.test'
+      },
+      attributes: {}
+    },
+    request: {
+      requestId: 'request-id',
+      timestamp: new Date().toISOString(),
+      type: 'LaunchRequest'
+    }
+  });
+  const inherited = await invokeEvent(inheritedEvent);
+
+  assertFailure(missing, 'Invalid Alexa event: missing version');
+  assertFailure(inherited, 'Invalid Alexa event: missing version');
+});
+
+test('Alexa request envelope versions must use supported value 1.0', async () => {
+  for (const version of ['', '   ', 1, null, {}, [], '2.0']) {
+    const result = await invoke({ type: 'LaunchRequest' }, { version });
+
+    assertFailure(result, 'Invalid Alexa event: version must be 1.0');
+  }
+});
+
+test('Alexa request envelopes tolerate unknown additional properties', async () => {
+  const event = {
+    version: '1.0',
+    futureEnvelopeProperty: { ignored: true },
+    session: {
+      new: true,
+      sessionId: 'session-id',
+      application: {
+        applicationId: 'amzn1.echo-sdk-ams.app.test'
+      },
+      attributes: {}
+    },
+    request: {
+      requestId: 'request-id',
+      timestamp: new Date().toISOString(),
+      type: 'LaunchRequest'
+    }
+  };
+
+  const result = await invokeEvent(event);
+
+  assert.equal(result.type, 'succeed');
+  assert.equal(
+    result.response.response.outputSpeech.text,
+    'Welcome to the Alexa Skills Kit, you can say hello'
+  );
+});
 
 function assertFailure(result, message) {
   assert.equal(result.type, 'fail');
@@ -198,6 +265,7 @@ test('launch request returns welcome prompt and keeps the session open', async (
 
 test('Lambda handler resolves through its returned promise', async () => {
   const event = {
+    version: '1.0',
     session: {
       new: true,
       sessionId: 'session-id',
@@ -224,7 +292,7 @@ test('Lambda handler resolves through its returned promise', async () => {
 
 test('Lambda handler rejects through its returned promise', async () => {
   await assert.rejects(handler({}), {
-    message: 'Invalid Alexa event: missing session.application.applicationId'
+    message: 'Invalid Alexa event: missing version'
   });
 });
 
@@ -242,6 +310,7 @@ test('AlexaSkill awaits asynchronous lifecycle handlers before dispatch', async 
     }
   });
   const event = {
+    version: '1.0',
     session: {
       new: true,
       sessionId: 'session-id',
@@ -273,6 +342,7 @@ test('AlexaSkill preserves Lambda context for custom request handlers', async ()
     }
   });
   const event = {
+    version: '1.0',
     session: {
       new: false,
       sessionId: 'session-id',
@@ -522,6 +592,7 @@ test('unsupported request types are not reflected into logs or failures', async 
 
 test('malformed events without an application id fail with a clear message', async () => {
   const result = await invokeEvent({
+    version: '1.0',
     session: {
       new: true,
       sessionId: 'session-id',
@@ -541,6 +612,7 @@ test('malformed events without an application id fail with a clear message', asy
 
 test('malformed events with non-string application ids fail before validation', async () => {
   const result = await invokeEvent({
+    version: '1.0',
     session: {
       new: true,
       sessionId: 'session-id',
@@ -580,7 +652,7 @@ test('Alexa application identity fields must be own properties', async () => {
   };
   const inheritedSessionEvent = Object.assign(
     Object.create({ session: validSession }),
-    { request }
+    { version: '1.0', request }
   );
   const inheritedApplicationSession = Object.assign(
     Object.create({
@@ -600,8 +672,8 @@ test('Alexa application identity fields must be own properties', async () => {
 
   for (const event of [
     inheritedSessionEvent,
-    { session: inheritedApplicationSession, request },
-    { session: inheritedApplicationIdSession, request }
+    { version: '1.0', session: inheritedApplicationSession, request },
+    { version: '1.0', session: inheritedApplicationIdSession, request }
   ]) {
     const result = await invokeEvent(event, { captureLogs: true });
     const logText = result.logs.join('\n');
@@ -631,6 +703,7 @@ test('Alexa sessions require their own session ID', async () => {
     }
   );
   const inherited = await invokeEvent({
+    version: '1.0',
     session: inheritedSession,
     request: {
       requestId: 'request-id',
@@ -709,6 +782,7 @@ test('Alexa sessions require their own new-session flag', async () => {
     attributes: {}
   });
   const inherited = await invokeEvent({
+    version: '1.0',
     session: inheritedSession,
     request: {
       requestId: 'request-id',
@@ -759,6 +833,7 @@ test('session new shape is validated before request and application authorizatio
 
 test('malformed events without a request type fail with a clear message', async () => {
   const result = await invokeEvent({
+    version: '1.0',
     session: {
       new: true,
       sessionId: 'session-id',
@@ -782,6 +857,7 @@ test('Alexa events require their own request envelope', async () => {
     type: 'LaunchRequest'
   };
   const event = Object.assign(Object.create({ request: inheritedRequest }), {
+    version: '1.0',
     session: {
       new: true,
       sessionId: 'session-id',
@@ -799,6 +875,7 @@ test('Alexa events require their own request envelope', async () => {
 
 test('malformed events with non-string request types fail before dispatch', async () => {
   const result = await invokeEvent({
+    version: '1.0',
     session: {
       new: true,
       sessionId: 'session-id',
@@ -825,6 +902,7 @@ test('malformed events with non-string request types fail before dispatch', asyn
 
 test('malformed session attributes are reset before responses are built', async () => {
   const result = await invokeEvent({
+    version: '1.0',
     session: {
       new: true,
       sessionId: 'session-id',
@@ -865,6 +943,7 @@ test('inherited session attributes are reset before responses are built', async 
   });
 
   const result = await invokeEvent({
+    version: '1.0',
     session,
     request: {
       requestId: 'request-id',
@@ -906,6 +985,7 @@ test('inherited Alexa request IDs are rejected', async () => {
   request.timestamp = new Date().toISOString();
 
   const result = await invokeEvent({
+    version: '1.0',
     session: {
       new: true,
       sessionId: 'session-id',
@@ -1112,6 +1192,7 @@ test('inherited intent envelopes are rejected before dispatch', async () => {
   request.timestamp = new Date().toISOString();
 
   const result = await invokeEvent({
+    version: '1.0',
     session: {
       new: true,
       sessionId: 'session-id',

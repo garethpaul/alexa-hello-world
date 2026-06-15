@@ -2,6 +2,7 @@
 
 ## 2026-06-15
 
+- Alexa events must own an exact `version: "1.0"` protocol field before nested request validation.
 - Intent requests must own their intent envelope before intent names are trusted.
 - Only owned Alexa session attributes are preserved. Missing, inherited, or
   malformed values are reset to an empty object before responses are built.

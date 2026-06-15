@@ -51,8 +51,15 @@ function parseRequestTimestamp(timestamp) {
 }
 
 function validateEvent(event, nowMilliseconds) {
+  if (!event || !hasOwn(event, 'version')) {
+    throw new Error('Invalid Alexa event: missing version');
+  }
+
+  if (event.version !== '1.0') {
+    throw new Error('Invalid Alexa event: version must be 1.0');
+  }
+
   if (
-    !event ||
     !hasOwn(event, 'session') ||
     !event.session ||
     !hasOwn(event.session, 'application') ||

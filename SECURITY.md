@@ -40,6 +40,7 @@ Helpful reports include:
 - Every Alexa event must provide its own boolean `session.new` before request
   validation, authorization, or lifecycle dispatch. Caller-provided values are
   not reflected into errors or logs.
+- Alexa events must own an exact `version: "1.0"` protocol field before nested request validation.
 - Every Alexa event must provide its own application identity fields through a
   non-empty string `session.application.applicationId`; inherited container or
   identifier properties fail before authorization.
