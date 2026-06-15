@@ -66,6 +66,8 @@
   option objects before response construction.
 - Register sample lifecycle behavior on a subclass-owned lifecycle handler table
   so loading `src/index.js` cannot mutate reusable `AlexaSkill` defaults.
+- Only owned Alexa session attributes are preserved. Missing, inherited, or
+  malformed values are reset to an empty object before responses are built.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

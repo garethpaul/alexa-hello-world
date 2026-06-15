@@ -1,7 +1,7 @@
 ---
 title: Alexa Session Attributes Ownership
 type: security
-status: in_progress
+status: completed
 date: 2026-06-15
 ---
 
@@ -18,7 +18,7 @@ object.
 
 ## Priorities
 
-1. **P0: Require owned session attributes.** Preserve only an own, plain
+1. **P0: Require owned session attributes.** Preserve only an own, non-array
    object-valued `session.attributes` field and normalize inherited or malformed
    values to an empty object.
 2. **P1 follow-up: Review response option ownership.** Assess inherited speech
@@ -78,7 +78,23 @@ normalization.
 
 ## Completion Evidence
 
-Pending implementation and validation.
+- Added `hasOwn(event.session, 'attributes')` before the existing object-shape
+  check and defined a fresh own data property so inherited data or accessors
+  cannot intercept normalization or reach the response.
+- Added an inherited-object regression while preserving the malformed-value and
+  valid request behavior; all 73 Node handler tests passed.
+- The lockfile-installed ESLint 10.4.1 lint gate, Prettier check, syntax build,
+  and `npm audit --omit=dev` passed with zero reported vulnerabilities.
+- Nine isolated hostile mutations were rejected for missing or inverted source
+  ownership, setter-interceptable assignment, missing or weakened regression
+  evidence, missing guidance, incomplete plan status, and runtime assignment
+  fallback.
+- The SDK-free baseline checker and repository-root and external-directory
+  `make check` gates passed.
+- Exact-path diff, generated-artifact, conflict-marker, whitespace, dependency
+  drift, and credential-shaped-addition audits passed.
+- No Lambda, IAM, Alexa developer-console, trigger, or live invocation scenario
+  was executed.
 
 ## Risks And Mitigations
 

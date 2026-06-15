@@ -81,6 +81,8 @@ Detected npm scripts:
   reflecting caller-controlled dispatch names into Lambda failures or logs.
 - Malformed Alexa `session.attributes` values are reset to an empty object
   before response session attributes are built.
+- Only owned Alexa session attributes are preserved. Missing, inherited, or
+  malformed values are reset to an empty object before responses are built.
 
 Use [`INTEGRATION_VERIFICATION.md`](INTEGRATION_VERIFICATION.md) for the
 exact-commit non-production Lambda and Alexa matrix. It covers configuration,

@@ -2,6 +2,8 @@
 
 ## 2026-06-15
 
+- Only owned Alexa session attributes are preserved. Missing, inherited, or
+  malformed values are reset to an empty object before responses are built.
 - Registered sample lifecycle behavior through a subclass-owned lifecycle handler table,
   preventing module load from replacing reusable `AlexaSkill` defaults.
 - Added a load-time regression and mutation-sensitive portable contracts for

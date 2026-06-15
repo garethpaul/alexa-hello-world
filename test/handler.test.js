@@ -844,6 +844,42 @@ test('malformed session attributes are reset before responses are built', async 
   assert.deepEqual(result.response.sessionAttributes, {});
 });
 
+test('inherited session attributes are reset before responses are built', async () => {
+  let interceptedAttributes;
+  const sessionPrototype = {};
+  Object.defineProperty(sessionPrototype, 'attributes', {
+    get() {
+      return { inherited: 'must-not-reach-response' };
+    },
+    set(value) {
+      interceptedAttributes = value;
+    }
+  });
+  const session = Object.create(sessionPrototype);
+  Object.assign(session, {
+    new: true,
+    sessionId: 'session-id',
+    application: {
+      applicationId: 'amzn1.echo-sdk-ams.app.test'
+    }
+  });
+
+  const result = await invokeEvent({
+    session,
+    request: {
+      requestId: 'request-id',
+      timestamp: new Date().toISOString(),
+      type: 'LaunchRequest'
+    }
+  });
+
+  assert.equal(result.type, 'succeed');
+  assert.deepEqual(result.response.sessionAttributes, {});
+  assert.equal(result.response.sessionAttributes.inherited, undefined);
+  assert.equal(interceptedAttributes, undefined);
+  assert.equal(Object.hasOwn(session, 'attributes'), true);
+});
+
 test('Alexa requests require their own request ID', async () => {
   const result = await invoke(
     { type: 'LaunchRequest' },

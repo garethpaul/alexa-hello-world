@@ -36,6 +36,8 @@ Priority:
 - Enforce an inclusive 150-second request timestamp freshness window before
   authorization or dispatch
 - Reset malformed Alexa session attributes before building responses
+- Only owned Alexa session attributes are preserved. Missing, inherited, or
+  malformed values are reset to an empty object before responses are built.
 - Dispatch only explicitly declared request handlers
 - Dispatch only explicitly declared intent handlers
 - Require dispatch keys to be non-empty strings before handler lookup

@@ -249,8 +249,16 @@ AlexaSkill.prototype.execute = async function (event, context) {
       throw new Error('Invalid applicationId');
     }
 
-    if (!isSessionAttributesObject(event.session.attributes)) {
-      event.session.attributes = {};
+    if (
+      !hasOwn(event.session, 'attributes') ||
+      !isSessionAttributesObject(event.session.attributes)
+    ) {
+      Object.defineProperty(event.session, 'attributes', {
+        value: {},
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
     }
 
     if (event.session.new) {

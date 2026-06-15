@@ -58,6 +58,7 @@ for path in \
   "docs/plans/2026-06-14-alexa-request-envelope-ownership.md" \
   "docs/plans/2026-06-14-alexa-async-handler.md" \
   "docs/plans/2026-06-15-alexa-event-handler-ownership.md" \
+  "docs/plans/2026-06-15-alexa-session-attributes-ownership.md" \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
@@ -87,6 +88,45 @@ if [ "$(grep -Fc "return buildSpeechletResponse" "$ALEXA_SKILL")" -ne 4 ]; then
   printf '%s\n' "All four Alexa response helpers must return their response payload." >&2
   exit 1
 fi
+
+if ! grep -Fq "!hasOwn(event.session, 'attributes') ||" "$ALEXA_SKILL" ||
+   ! grep -Fq "!isSessionAttributesObject(event.session.attributes)" "$ALEXA_SKILL" ||
+   ! grep -Fq "Object.defineProperty(event.session, 'attributes', {" "$ALEXA_SKILL"; then
+  printf '%s\n' "AlexaSkill must normalize inherited or malformed session attributes." >&2
+  exit 1
+fi
+
+for session_attributes_test_contract in \
+  "malformed session attributes are reset before responses are built" \
+  "inherited session attributes are reset before responses are built" \
+  "assert.equal(result.response.sessionAttributes.inherited, undefined);" \
+  "assert.equal(interceptedAttributes, undefined);" \
+  "assert.equal(Object.hasOwn(session, 'attributes'), true);"; do
+  if ! grep -Fq "$session_attributes_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep session attribute ownership: $session_attributes_test_contract" >&2
+    exit 1
+  fi
+done
+
+session_attributes_guidance='Only owned Alexa session attributes are preserved.'
+for guidance_path in README.md SECURITY.md VISION.md AGENTS.md CHANGES.md; do
+  if ! grep -Fq "$session_attributes_guidance" "$ROOT_DIR/$guidance_path"; then
+    printf '%s\n' "$guidance_path must document session attribute ownership." >&2
+    exit 1
+  fi
+done
+
+for session_attributes_plan_contract in \
+  "status: completed" \
+  "hasOwn(event.session, 'attributes')" \
+  "make check" \
+  "hostile mutations"; do
+  if ! grep -Fq "$session_attributes_plan_contract" \
+    "$DOCS_PLANS/2026-06-15-alexa-session-attributes-ownership.md"; then
+    printf '%s\n' "Session attribute ownership plan must preserve completion evidence: $session_attributes_plan_contract" >&2
+    exit 1
+  fi
+done
 
 if grep -Eq 'context\.(succeed|fail)' "$ROOT_DIR/src/AlexaSkill.js" "$INDEX"; then
   printf '%s\n' "Runtime source must not restore legacy Lambda context completion." >&2
