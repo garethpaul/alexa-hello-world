@@ -37,6 +37,7 @@ Priority:
   timestamp validation, authorization, or dispatch
 - Enforce an inclusive 150-second request timestamp freshness window before
   authorization or dispatch
+- Every Alexa request must own a non-empty string `request.locale` before lifecycle behavior, authorization, or dispatch.
 - Reset malformed Alexa session attributes before building responses
 - Only owned Alexa session attributes are preserved. Missing, inherited, or
   malformed values are reset to an empty object before responses are built.

@@ -57,6 +57,7 @@ Helpful reports include:
   inclusive 150-second freshness window. This defense-in-depth check does not
   replace Alexa signature verification for custom web services or Lambda
   trigger authorization.
+- Every Alexa request must own a non-empty string `request.locale` before lifecycle behavior, authorization, or dispatch.
 - Primary and reprompt speech must be validated before response construction;
   unsupported types and missing, blank, or non-string speech fail before
   the promise-returning Lambda handler resolves with a payload.

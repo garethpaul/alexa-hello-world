@@ -145,6 +145,16 @@ function validateEvent(event, nowMilliseconds) {
       'Invalid Alexa event: request.timestamp is outside the allowed freshness window'
     );
   }
+
+  if (!hasOwn(event.request, 'locale')) {
+    throw new Error('Invalid Alexa event: missing request.locale');
+  }
+
+  if (!isNonEmptyString(event.request.locale)) {
+    throw new Error(
+      'Invalid Alexa event: request.locale must be a non-empty string'
+    );
+  }
 }
 
 function isSessionAttributesObject(attributes) {

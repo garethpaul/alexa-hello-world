@@ -1,7 +1,7 @@
 ---
 title: Alexa Request Locale Validation
 type: security
-status: planned
+status: completed
 date: 2026-06-15
 ---
 
@@ -94,3 +94,21 @@ verification evidence.
   request envelopes already provide the property.
 - The validation deliberately accepts any non-empty string so new Alexa locale
   codes do not require a framework release.
+
+## Completion Evidence
+
+- Added own-property and non-empty-string validation for `request.locale` after
+  timestamp freshness and before lifecycle hooks or application authorization.
+- Added canonical `en-US` fixtures plus missing, inherited, blank, non-string,
+  future-locale, unknown-property, and validation-order regressions. All 81 tests
+  in the handler suite passed.
+- The lockfile-installed ESLint 10.4.1 lint gate, Prettier check, syntax build,
+  and `npm audit --omit=dev` passed with zero reported vulnerabilities.
+- Nine isolated hostile mutations were rejected for weakened ownership, shape,
+  ordering, fixture identity, inherited-input, future-locale compatibility,
+  maintained guidance, plan status, and verification evidence.
+- The SDK-free baseline checker and repository-root and external-directory
+  `make check` gates passed.
+- Exact-path diff, generated-artifact, conflict-marker, whitespace, dependency
+  and workflow drift, and credential-shaped-addition audits passed.
+- No live Lambda or Alexa invocation was performed.

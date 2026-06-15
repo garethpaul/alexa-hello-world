@@ -59,6 +59,7 @@ for path in \
   "docs/plans/2026-06-14-alexa-async-handler.md" \
   "docs/plans/2026-06-15-alexa-event-handler-ownership.md" \
   "docs/plans/2026-06-15-alexa-intent-envelope-ownership.md" \
+  "docs/plans/2026-06-15-alexa-request-locale-validation.md" \
   "docs/plans/2026-06-15-alexa-request-version-validation.md" \
   "docs/plans/2026-06-15-alexa-session-attributes-ownership.md" \
   "docs/readme-overview.svg" \
@@ -891,6 +892,63 @@ for timestamp_doc_contract in \
   timestamp_contract=${timestamp_doc_contract#*|}
   if ! grep -Fq "$timestamp_contract" "$timestamp_doc"; then
     printf '%s\n' "$timestamp_doc must document request timestamp freshness." >&2
+    exit 1
+  fi
+done
+
+for locale_contract in \
+  "hasOwn(event.request, 'locale')" \
+  "isNonEmptyString(event.request.locale)" \
+  "Invalid Alexa event: missing request.locale" \
+  "Invalid Alexa event: request.locale must be a non-empty string"; do
+  if ! grep -Fq "$locale_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep request locale validation: $locale_contract" >&2
+    exit 1
+  fi
+done
+
+timestamp_freshness_line=$(grep -nF "Math.abs(nowMilliseconds - requestTimestamp)" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+locale_ownership_line=$(grep -nF "hasOwn(event.request, 'locale')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$timestamp_freshness_line" ] || [ -z "$locale_ownership_line" ] || \
+   [ -z "$authorization_line" ] || \
+   [ "$timestamp_freshness_line" -ge "$locale_ownership_line" ] || \
+   [ "$locale_ownership_line" -ge "$authorization_line" ]; then
+  printf '%s\n' "AlexaSkill must validate request locale after timestamp freshness and before application authorization." >&2
+  exit 1
+fi
+
+for locale_test_contract in \
+  "locale: Object.hasOwn(options, 'locale') ? options.locale : 'en-US'" \
+  "Alexa requests require their own locale" \
+  "Object.create({ locale: 'en-US' })" \
+  "Alexa request locales must be non-empty strings" \
+  "['', '   ', 1, null, {}, []]" \
+  "Alexa request locales accept future non-empty string values" \
+  "futureRequestProperty: { ignored: true }" \
+  "locale shape is validated before lifecycle and application authorization"; do
+  if ! grep -Fq "$locale_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep request locale coverage: $locale_test_contract" >&2
+    exit 1
+  fi
+done
+
+locale_guidance='Every Alexa request must own a non-empty string `request.locale` before lifecycle behavior, authorization, or dispatch.'
+for locale_guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$locale_guidance" "$ROOT_DIR/$locale_guidance_path"; then
+    printf '%s\n' "$locale_guidance_path must document request locale validation." >&2
+    exit 1
+  fi
+done
+
+for locale_plan_contract in \
+  "status: completed" \
+  "81 tests" \
+  "make check" \
+  "hostile mutations" \
+  "No live Lambda or Alexa invocation was performed"; do
+  if ! grep -Fqi "$locale_plan_contract" \
+    "$DOCS_PLANS/2026-06-15-alexa-request-locale-validation.md"; then
+    printf '%s\n' "Request-locale plan must keep completion evidence: $locale_plan_contract" >&2
     exit 1
   fi
 done

@@ -84,7 +84,8 @@ function invoke(request, options = {}) {
     request: Object.assign(
       {
         requestId: 'request-id',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        locale: Object.hasOwn(options, 'locale') ? options.locale : 'en-US'
       },
       request
     )
@@ -100,6 +101,10 @@ function invoke(request, options = {}) {
 
   if (options.omitRequestId) {
     delete event.request.requestId;
+  }
+
+  if (options.omitLocale) {
+    delete event.request.locale;
   }
 
   if (Object.hasOwn(options, 'sessionNew')) {
@@ -138,6 +143,7 @@ test('Alexa request envelopes require their own protocol version', async () => {
     request: {
       requestId: 'request-id',
       timestamp: new Date().toISOString(),
+      locale: 'en-US',
       type: 'LaunchRequest'
     }
   });
@@ -170,6 +176,8 @@ test('Alexa request envelopes tolerate unknown additional properties', async () 
     request: {
       requestId: 'request-id',
       timestamp: new Date().toISOString(),
+      locale: 'en-US',
+      futureRequestProperty: { ignored: true },
       type: 'LaunchRequest'
     }
   };
@@ -277,6 +285,7 @@ test('Lambda handler resolves through its returned promise', async () => {
     request: {
       requestId: 'request-id',
       timestamp: new Date().toISOString(),
+      locale: 'en-US',
       type: 'LaunchRequest'
     }
   };
@@ -322,6 +331,7 @@ test('AlexaSkill awaits asynchronous lifecycle handlers before dispatch', async 
     request: {
       requestId: 'request-id',
       timestamp: new Date().toISOString(),
+      locale: 'en-US',
       type: 'LaunchRequest'
     }
   };
@@ -354,6 +364,7 @@ test('AlexaSkill preserves Lambda context for custom request handlers', async ()
     request: {
       requestId: 'request-id',
       timestamp: new Date().toISOString(),
+      locale: 'en-US',
       type: 'LaunchRequest'
     }
   };
@@ -642,6 +653,7 @@ test('Alexa application identity fields must be own properties', async () => {
   const request = {
     requestId: 'request-id',
     timestamp: new Date().toISOString(),
+    locale: 'en-US',
     type: 'LaunchRequest'
   };
   const validSession = {
@@ -708,6 +720,7 @@ test('Alexa sessions require their own session ID', async () => {
     request: {
       requestId: 'request-id',
       timestamp: new Date().toISOString(),
+      locale: 'en-US',
       type: 'LaunchRequest'
     }
   });
@@ -787,6 +800,7 @@ test('Alexa sessions require their own new-session flag', async () => {
     request: {
       requestId: 'request-id',
       timestamp: new Date().toISOString(),
+      locale: 'en-US',
       type: 'LaunchRequest'
     }
   });
@@ -854,6 +868,7 @@ test('Alexa events require their own request envelope', async () => {
   const inheritedRequest = {
     requestId: 'inherited-request-id',
     timestamp: new Date().toISOString(),
+    locale: 'en-US',
     type: 'LaunchRequest'
   };
   const event = Object.assign(Object.create({ request: inheritedRequest }), {
@@ -914,6 +929,7 @@ test('malformed session attributes are reset before responses are built', async 
     request: {
       requestId: 'request-id',
       timestamp: new Date().toISOString(),
+      locale: 'en-US',
       type: 'LaunchRequest'
     }
   });
@@ -948,6 +964,7 @@ test('inherited session attributes are reset before responses are built', async 
     request: {
       requestId: 'request-id',
       timestamp: new Date().toISOString(),
+      locale: 'en-US',
       type: 'LaunchRequest'
     }
   });
@@ -1174,6 +1191,69 @@ test('timestamp freshness is validated before application id authorization', asy
   );
 });
 
+test('Alexa requests require their own locale', async () => {
+  const missing = await invoke({ type: 'LaunchRequest' }, { omitLocale: true });
+  const inheritedRequest = Object.assign(Object.create({ locale: 'en-US' }), {
+    type: 'LaunchRequest',
+    requestId: 'request-id',
+    timestamp: new Date().toISOString()
+  });
+  const inherited = await invokeEvent({
+    version: '1.0',
+    session: {
+      new: true,
+      sessionId: 'session-id',
+      application: { applicationId: 'amzn1.echo-sdk-ams.app.test' },
+      attributes: {}
+    },
+    request: inheritedRequest
+  });
+
+  assertFailure(missing, 'Invalid Alexa event: missing request.locale');
+  assertFailure(inherited, 'Invalid Alexa event: missing request.locale');
+});
+
+test('Alexa request locales must be non-empty strings', async () => {
+  for (const locale of ['', '   ', 1, null, {}, []]) {
+    const result = await invoke({ type: 'LaunchRequest' }, { locale });
+
+    assertFailure(
+      result,
+      'Invalid Alexa event: request.locale must be a non-empty string'
+    );
+  }
+});
+
+test('Alexa request locales accept future non-empty string values', async () => {
+  const result = await invoke(
+    { type: 'LaunchRequest', futureRequestProperty: { ignored: true } },
+    { locale: 'en-XY' }
+  );
+
+  assert.equal(result.type, 'succeed');
+});
+
+test('locale shape is validated before lifecycle and application authorization', async () => {
+  const configuredHandler = loadHandlerWithSkillId(
+    'amzn1.echo-sdk-ams.app.expected'
+  );
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    {
+      applicationId: 'amzn1.echo-sdk-ams.app.other',
+      captureLogs: true,
+      handler: configuredHandler,
+      locale: 42
+    }
+  );
+
+  assertFailure(
+    result,
+    'Invalid Alexa event: request.locale must be a non-empty string'
+  );
+  assert.doesNotMatch(result.logs.join('\n'), /onSessionStarted/);
+});
+
 test('malformed intent requests fail with a clear message', async () => {
   const result = await invoke({
     type: 'IntentRequest',
@@ -1190,6 +1270,7 @@ test('inherited intent envelopes are rejected before dispatch', async () => {
   request.type = 'IntentRequest';
   request.requestId = 'request-id';
   request.timestamp = new Date().toISOString();
+  request.locale = 'en-US';
 
   const result = await invokeEvent({
     version: '1.0',
