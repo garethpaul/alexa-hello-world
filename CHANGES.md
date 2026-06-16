@@ -1,5 +1,9 @@
 # Changes
 
+## 2026-06-16
+
+- Resolved Alexa request handlers must be callable before session-start lifecycle hooks.
+
 ## 2026-06-15
 
 - Every Alexa request must own a non-empty string `request.locale` before lifecycle behavior, authorization, or dispatch.

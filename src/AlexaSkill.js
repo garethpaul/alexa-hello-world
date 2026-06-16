@@ -286,7 +286,7 @@ AlexaSkill.prototype.execute = async function (event, context) {
     var requestHandler = hasOwn(this.requestHandlers, event.request.type)
       ? this.requestHandlers[event.request.type]
       : undefined;
-    if (!requestHandler) {
+    if (typeof requestHandler !== 'function') {
       throw new Error('Unsupported request type');
     }
 

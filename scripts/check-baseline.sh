@@ -954,9 +954,12 @@ for locale_plan_contract in \
 done
 
 unsupported_handler_line=$(grep -nF "var requestHandler = hasOwn(this.requestHandlers, event.request.type)" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+callable_handler_line=$(grep -nF "typeof requestHandler !== 'function'" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
 session_start_line=$(grep -nF "await this.eventHandlers.onSessionStarted(event.request, event.session);" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
-if [ -z "$unsupported_handler_line" ] || [ -z "$session_start_line" ] || \
-   [ "$unsupported_handler_line" -ge "$session_start_line" ]; then
+if [ -z "$unsupported_handler_line" ] || [ -z "$callable_handler_line" ] || \
+   [ -z "$session_start_line" ] || \
+   [ "$unsupported_handler_line" -ge "$callable_handler_line" ] || \
+   [ "$callable_handler_line" -ge "$session_start_line" ]; then
   printf '%s\n' "AlexaSkill must reject unsupported request types before session-start lifecycle hooks." >&2
   exit 1
 fi
@@ -968,6 +971,38 @@ for unsupported_lifecycle_test_contract in \
   "assert.doesNotMatch(unsupportedRequestLogs, /onSessionStarted/);"; do
   if ! grep -Fq "$unsupported_lifecycle_test_contract" "$ROOT_DIR/test/handler.test.js"; then
     printf '%s\n' "Handler tests must keep unsupported-request lifecycle coverage: $unsupported_lifecycle_test_contract" >&2
+    exit 1
+  fi
+done
+
+for callable_handler_test_contract in \
+  "non-callable request handlers fail before session lifecycle hooks" \
+  "LaunchRequest: {}" \
+  "assertFailure(result, 'Unsupported request type');" \
+  "assert.equal(sessionStarts, 0);"; do
+  if ! grep -Fq "$callable_handler_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep callable request-handler coverage: $callable_handler_test_contract" >&2
+    exit 1
+  fi
+done
+
+callable_handler_guidance='Resolved Alexa request handlers must be callable before session-start lifecycle hooks.'
+for callable_handler_guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$callable_handler_guidance" "$ROOT_DIR/$callable_handler_guidance_path"; then
+    printf '%s\n' "$callable_handler_guidance_path must document request-handler callability." >&2
+    exit 1
+  fi
+done
+
+for callable_handler_plan_contract in \
+  'Status: Completed' \
+  'non-callable request handlers fail before session lifecycle hooks' \
+  'repository-root and external-directory `make check`' \
+  'hostile mutations' \
+  'No live Lambda deployment'; do
+  if ! grep -Fq "$callable_handler_plan_contract" \
+    "$DOCS_PLANS/2026-06-16-alexa-callable-request-handler.md"; then
+    printf '%s\n' "Callable request-handler plan must keep completion evidence: $callable_handler_plan_contract" >&2
     exit 1
   fi
 done

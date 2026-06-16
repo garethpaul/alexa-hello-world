@@ -590,6 +590,30 @@ test('unsupported request types fail with a clear message', async () => {
   assert.doesNotMatch(unsupportedRequestLogs, /onSessionStarted/);
 });
 
+test('non-callable request handlers fail before session lifecycle hooks', async () => {
+  let sessionStarts = 0;
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    {
+      handler: function (event) {
+        const skill = new AlexaSkill();
+        skill.requestHandlers = Object.assign({}, skill.requestHandlers, {
+          LaunchRequest: {}
+        });
+        skill.eventHandlers = Object.assign({}, skill.eventHandlers, {
+          onSessionStarted: function () {
+            sessionStarts += 1;
+          }
+        });
+        return skill.execute(event);
+      }
+    }
+  );
+
+  assertFailure(result, 'Unsupported request type');
+  assert.equal(sessionStarts, 0);
+});
+
 test('inherited request type names are not dispatched', async () => {
   const result = await invoke({ type: 'constructor' });
 

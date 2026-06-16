@@ -1,6 +1,6 @@
 # Require Callable Alexa Request Handlers
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -59,3 +59,18 @@ an existing fail-closed boundary with a small reviewable change.
 
 - No live Lambda deployment, IAM policy, Alexa developer-console trigger, or
   real skill invocation is exercised locally.
+
+## Completed Verification
+
+- `non-callable request handlers fail before session lifecycle hooks` failed
+  before implementation because the lifecycle hook ran and dispatch raised a
+  non-callable `.call` error, then passed with the stable unsupported failure
+  and zero lifecycle starts.
+- The complete suite passed all 82 tests after a lockfile-clean install.
+- Lockfile-installed ESLint, Prettier, syntax build, and
+  `npm audit --omit=dev` passed with zero reported vulnerabilities.
+- Repository-root and external-directory `make check` both passed the complete
+  maintained gate.
+- All seven isolated hostile mutations were rejected: removed or late
+  callability validation, changed failure semantics, renamed or weakened
+  lifecycle coverage, removed guidance, and reopened plan status.
