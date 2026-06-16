@@ -58,6 +58,7 @@ for path in \
   "docs/plans/2026-06-14-alexa-request-envelope-ownership.md" \
   "docs/plans/2026-06-14-alexa-async-handler.md" \
   "docs/plans/2026-06-15-alexa-event-handler-ownership.md" \
+  "docs/plans/2026-06-16-alexa-callable-event-handlers.md" \
   "docs/plans/2026-06-15-alexa-intent-envelope-ownership.md" \
   "docs/plans/2026-06-15-alexa-request-locale-validation.md" \
   "docs/plans/2026-06-15-alexa-request-version-validation.md" \
@@ -189,7 +190,7 @@ done
 
 for async_skill_contract in \
   "AlexaSkill.prototype.execute = async function (event, context)" \
-  "await this.eventHandlers.onSessionStarted" \
+  "await sessionStartedHandler.call(this, event.request, event.session)" \
   "return await requestHandler.call" \
   "throw e;"; do
   if ! grep -Fq "$async_skill_contract" "$ALEXA_SKILL"; then
@@ -955,7 +956,7 @@ done
 
 unsupported_handler_line=$(grep -nF "var requestHandler = hasOwn(this.requestHandlers, event.request.type)" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
 callable_handler_line=$(grep -nF "typeof requestHandler !== 'function'" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
-session_start_line=$(grep -nF "await this.eventHandlers.onSessionStarted(event.request, event.session);" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+session_start_line=$(grep -nF "await sessionStartedHandler.call(this, event.request, event.session);" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
 if [ -z "$unsupported_handler_line" ] || [ -z "$callable_handler_line" ] || \
    [ -z "$session_start_line" ] || \
    [ "$unsupported_handler_line" -ge "$callable_handler_line" ] || \
@@ -1040,6 +1041,65 @@ for callable_intent_plan_contract in \
   if ! grep -Fq "$callable_intent_plan_contract" \
     "$DOCS_PLANS/2026-06-16-alexa-callable-intent-handler.md"; then
     printf '%s\n' "Callable intent-handler plan must keep completion evidence: $callable_intent_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for callable_event_handler_contract in \
+  "var REQUEST_EVENT_HANDLER_NAMES = {" \
+  "requestHandler === defaultRequestHandler" \
+  "eventHandler = this.eventHandlers && this.eventHandlers[eventHandlerName];" \
+  "typeof eventHandler !== 'function'" \
+  "typeof sessionStartedHandler !== 'function'" \
+  "await sessionStartedHandler.call(this, event.request, event.session);" \
+  "eventHandler"; do
+  if ! grep -Fq "$callable_event_handler_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must require callable lifecycle handlers before dispatch: $callable_event_handler_contract" >&2
+    exit 1
+  fi
+done
+
+event_handler_guard_line=$(grep -nF "typeof eventHandler !== 'function'" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+session_handler_guard_line=$(grep -nF "typeof sessionStartedHandler !== 'function'" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+session_handler_call_line=$(grep -nF "await sessionStartedHandler.call(this, event.request, event.session);" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$event_handler_guard_line" ] || [ -z "$session_handler_guard_line" ] || \
+   [ -z "$session_handler_call_line" ] || \
+   [ "$event_handler_guard_line" -ge "$session_handler_guard_line" ] || \
+   [ "$session_handler_guard_line" -ge "$session_handler_call_line" ]; then
+  printf '%s\n' "AlexaSkill must validate lifecycle handler callability before session-start dispatch." >&2
+  exit 1
+fi
+
+for callable_event_test_contract in \
+  "non-callable request event handlers fail before session lifecycle hooks" \
+  "onLaunch: {}" \
+  "non-callable session-start handlers fail before request dispatch" \
+  "onSessionStarted: {}" \
+  "assert.equal(sessionStarts, 0);" \
+  "assert.equal(launchCalls, 0);"; do
+  if ! grep -Fq "$callable_event_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep callable event-handler coverage: $callable_event_test_contract" >&2
+    exit 1
+  fi
+done
+
+callable_event_guidance='Resolved Alexa lifecycle event handlers must be callable before lifecycle hooks or request dispatch.'
+for callable_event_guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$callable_event_guidance" "$ROOT_DIR/$callable_event_guidance_path"; then
+    printf '%s\n' "$callable_event_guidance_path must document lifecycle event-handler callability." >&2
+    exit 1
+  fi
+done
+
+for callable_event_plan_contract in \
+  'Status: Completed' \
+  'Non-callable request-specific event handlers fail before session lifecycle hooks' \
+  'repository and external-directory `make check`' \
+  'hostile mutations' \
+  'No live Lambda or Alexa invocation was performed'; do
+  if ! grep -Fq "$callable_event_plan_contract" \
+    "$DOCS_PLANS/2026-06-16-alexa-callable-event-handlers.md"; then
+    printf '%s\n' "Callable event-handler plan must keep completion evidence: $callable_event_plan_contract" >&2
     exit 1
   fi
 done

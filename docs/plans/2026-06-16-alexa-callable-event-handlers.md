@@ -1,6 +1,6 @@
 # Callable Alexa Event Handlers
 
-## Status: Planned
+## Status: Completed
 
 ## Priority
 
@@ -15,8 +15,8 @@ function-call error instead of the stable unsupported-request failure.
 - Resolve the required lifecycle handlers before any new-session hook runs.
 - Require `onSessionStarted` for new sessions and the request-specific handler
   to be functions before invocation.
-- Reject malformed lifecycle tables with the existing `Unsupported request
-  type` error while preserving valid synchronous and asynchronous handlers.
+- Reject malformed lifecycle tables with the stable unsupported-request error.
+- Preserve valid synchronous and asynchronous handlers.
 - Add executable and static mutation-sensitive coverage plus synchronized
   maintenance guidance.
 
@@ -46,3 +46,20 @@ function-call error instead of the stable unsupported-request failure.
 - Non-callable `onSessionStarted` handlers fail before lifecycle dispatch with
   `Unsupported request type`.
 - Existing callable event handlers retain their ordering and async behavior.
+
+## Verification Completed
+
+- The pre-fix review confirmed that malformed request-specific and
+  session-start lifecycle handlers reached raw function calls.
+- Non-callable request-specific event handlers fail before session lifecycle hooks.
+- Non-callable session-start handlers fail before request dispatch. Both retain
+  the stable `Unsupported request type` error.
+- The complete locked Node gate passed 85 tests, lint, formatting, syntax build,
+  and `npm audit --omit=dev` with zero reported vulnerabilities.
+- The repository and external-directory `make check` passed the complete
+  maintained gate.
+- Seven isolated hostile mutations were rejected across event-handler
+  resolution, callability checks, lifecycle ordering, regressions, guidance,
+  and completed-plan evidence.
+- Exact diff, artifact, secret, conflict, mode, binary, size, and whitespace
+  audits passed. No live Lambda or Alexa invocation was performed.

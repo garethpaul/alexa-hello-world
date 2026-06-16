@@ -636,6 +636,50 @@ test('non-callable request handlers fail before session lifecycle hooks', async 
   assert.equal(sessionStarts, 0);
 });
 
+test('non-callable request event handlers fail before session lifecycle hooks', async () => {
+  let sessionStarts = 0;
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    {
+      handler: function (event) {
+        const skill = new AlexaSkill();
+        skill.eventHandlers = Object.assign({}, skill.eventHandlers, {
+          onSessionStarted: function () {
+            sessionStarts += 1;
+          },
+          onLaunch: {}
+        });
+        return skill.execute(event);
+      }
+    }
+  );
+
+  assertFailure(result, 'Unsupported request type');
+  assert.equal(sessionStarts, 0);
+});
+
+test('non-callable session-start handlers fail before request dispatch', async () => {
+  let launchCalls = 0;
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    {
+      handler: function (event) {
+        const skill = new AlexaSkill();
+        skill.eventHandlers = Object.assign({}, skill.eventHandlers, {
+          onSessionStarted: {},
+          onLaunch: function () {
+            launchCalls += 1;
+          }
+        });
+        return skill.execute(event);
+      }
+    }
+  );
+
+  assertFailure(result, 'Unsupported request type');
+  assert.equal(launchCalls, 0);
+});
+
 test('inherited request type names are not dispatched', async () => {
   const result = await invoke({ type: 'constructor' });
 

@@ -71,6 +71,7 @@
 - Unsupported request types are rejected before session-start lifecycle hooks.
 - Resolved Alexa request handlers must be callable before session-start lifecycle hooks.
 - Resolved Alexa intent handlers must be callable before dispatch.
+- Resolved Alexa lifecycle event handlers must be callable before lifecycle hooks or request dispatch.
 - Only owned Alexa session attributes are preserved. Missing, inherited, or
   malformed values are reset to an empty object before responses are built.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.

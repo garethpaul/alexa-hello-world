@@ -2,6 +2,11 @@
 
 var REQUEST_TIMESTAMP_TOLERANCE_MS = 150 * 1000;
 var ISO_8601_UTC_PATTERN = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d+)?Z$/;
+var REQUEST_EVENT_HANDLER_NAMES = {
+  LaunchRequest: 'onLaunch',
+  IntentRequest: 'onIntent',
+  SessionEndedRequest: 'onSessionEnded'
+};
 
 function AlexaSkill(appId, now) {
   this._appId = appId;
@@ -171,26 +176,16 @@ AlexaSkill.speechOutputType = {
 };
 
 AlexaSkill.prototype.requestHandlers = {
-  LaunchRequest: function (event, context, response) {
-    return this.eventHandlers.onLaunch.call(
-      this,
-      event.request,
-      event.session,
-      response
-    );
+  LaunchRequest: function (event, context, response, eventHandler) {
+    return eventHandler.call(this, event.request, event.session, response);
   },
 
-  IntentRequest: function (event, context, response) {
-    return this.eventHandlers.onIntent.call(
-      this,
-      event.request,
-      event.session,
-      response
-    );
+  IntentRequest: function (event, context, response, eventHandler) {
+    return eventHandler.call(this, event.request, event.session, response);
   },
 
-  SessionEndedRequest: function (event, context) {
-    return this.eventHandlers.onSessionEnded(event.request, event.session);
+  SessionEndedRequest: function (event, context, response, eventHandler) {
+    return eventHandler.call(this, event.request, event.session);
   }
 };
 
@@ -290,15 +285,32 @@ AlexaSkill.prototype.execute = async function (event, context) {
       throw new Error('Unsupported request type');
     }
 
+    var defaultRequestHandler =
+      AlexaSkill.prototype.requestHandlers[event.request.type];
+    var eventHandler;
+    if (requestHandler === defaultRequestHandler) {
+      var eventHandlerName = REQUEST_EVENT_HANDLER_NAMES[event.request.type];
+      eventHandler = this.eventHandlers && this.eventHandlers[eventHandlerName];
+      if (typeof eventHandler !== 'function') {
+        throw new Error('Unsupported request type');
+      }
+    }
+
     if (event.session.new) {
-      await this.eventHandlers.onSessionStarted(event.request, event.session);
+      var sessionStartedHandler =
+        this.eventHandlers && this.eventHandlers.onSessionStarted;
+      if (typeof sessionStartedHandler !== 'function') {
+        throw new Error('Unsupported request type');
+      }
+      await sessionStartedHandler.call(this, event.request, event.session);
     }
 
     return await requestHandler.call(
       this,
       event,
       context,
-      new Response(event.session)
+      new Response(event.session),
+      eventHandler
     );
   } catch (e) {
     console.log('Alexa request failed');

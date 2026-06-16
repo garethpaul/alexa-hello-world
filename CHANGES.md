@@ -5,6 +5,8 @@
 - Resolved Alexa request handlers must be callable before session-start lifecycle hooks.
 - Resolved Alexa intent handlers must be callable before dispatch.
   Malformed handler maps retain the stable unsupported-intent failure.
+- Resolved Alexa lifecycle event handlers must be callable before lifecycle hooks or request dispatch.
+  This prevents partial lifecycle effects and raw function-call failures from malformed subclass tables.
 
 ## 2026-06-15
 
