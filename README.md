@@ -126,6 +126,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Every Alexa request must own a non-empty string `request.locale` before lifecycle behavior, authorization, or dispatch.
 - Unsupported request types are rejected before session-start lifecycle hooks.
 - Resolved Alexa request handlers must be callable before session-start lifecycle hooks.
+- Resolved Alexa intent handlers must be callable before dispatch.
 - Rejected dispatch names are not included in failure diagnostics or logs,
   preventing embedded control characters from forging log entries.
 - Primary and reprompt speech are validated before response construction.

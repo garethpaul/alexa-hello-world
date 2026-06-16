@@ -1007,6 +1007,43 @@ for callable_handler_plan_contract in \
   fi
 done
 
+if ! grep -Fq "typeof intentHandler === 'function'" "$ALEXA_SKILL"; then
+  printf '%s\n' "AlexaSkill must require callable intent handlers before dispatch." >&2
+  exit 1
+fi
+
+for callable_intent_test_contract in \
+  "non-callable intent handlers fail with the stable unsupported error" \
+  "BrokenIntent: { call: () => handlerCalls++ }" \
+  "assertFailure(result, 'Unsupported intent');" \
+  "assert.equal(handlerCalls, 0);"; do
+  if ! grep -Fq "$callable_intent_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep callable intent-handler coverage: $callable_intent_test_contract" >&2
+    exit 1
+  fi
+done
+
+callable_intent_guidance='Resolved Alexa intent handlers must be callable before dispatch.'
+for callable_intent_guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$callable_intent_guidance" "$ROOT_DIR/$callable_intent_guidance_path"; then
+    printf '%s\n' "$callable_intent_guidance_path must document intent-handler callability." >&2
+    exit 1
+  fi
+done
+
+for callable_intent_plan_contract in \
+  'Status: Completed' \
+  'Non-callable intent handlers fail with `Unsupported intent`' \
+  'repository and external-directory `make check`' \
+  'hostile mutations' \
+  'No live Lambda or Alexa invocation was performed'; do
+  if ! grep -Fq "$callable_intent_plan_contract" \
+    "$DOCS_PLANS/2026-06-16-alexa-callable-intent-handler.md"; then
+    printf '%s\n' "Callable intent-handler plan must keep completion evidence: $callable_intent_plan_contract" >&2
+    exit 1
+  fi
+done
+
 unsupported_lifecycle_guidance='Unsupported request types are rejected before session-start lifecycle hooks.'
 for unsupported_lifecycle_guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
   if ! grep -Fq "$unsupported_lifecycle_guidance" "$ROOT_DIR/$unsupported_lifecycle_guidance_path"; then

@@ -1,6 +1,6 @@
 # Callable Alexa Intent Handlers
 
-## Status: Planned
+## Status: Completed
 
 ## Priority
 
@@ -41,4 +41,13 @@ the current support check and is invoked with `.call`, producing a raw
 
 ## Verification Completed
 
-Pending implementation and bounded verification.
+- The pre-fix review confirmed that truthy object handlers reached `.call` and
+  exposed a raw function-call failure.
+- Non-callable intent handlers fail with `Unsupported intent`, and the focused
+  regression proves the malformed handler is never called.
+- The repository and external-directory `make check` passed the complete locked
+  gate with 83 tests on Node 20.
+- Six hostile mutations were rejected across the handler guard, regression,
+  no-call assertion, guidance, type check, and completed plan.
+- Exact diff, artifact, secret, conflict, mode, binary, size, and whitespace
+  audits passed. No live Lambda or Alexa invocation was performed.

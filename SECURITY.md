@@ -60,6 +60,7 @@ Helpful reports include:
 - Every Alexa request must own a non-empty string `request.locale` before lifecycle behavior, authorization, or dispatch.
 - Unsupported request types are rejected before session-start lifecycle hooks.
 - Resolved Alexa request handlers must be callable before session-start lifecycle hooks.
+- Resolved Alexa intent handlers must be callable before dispatch.
 - Primary and reprompt speech must be validated before response construction;
   unsupported types and missing, blank, or non-string speech fail before
   the promise-returning Lambda handler resolves with a payload.

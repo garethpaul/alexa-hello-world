@@ -579,6 +579,28 @@ test('unsupported intent names are not reflected into logs or failures', async (
   assert.doesNotMatch(logText, /forged-intent-log/);
 });
 
+test('non-callable intent handlers fail with the stable unsupported error', async () => {
+  let handlerCalls = 0;
+  const result = await invoke(
+    {
+      type: 'IntentRequest',
+      intent: { name: 'BrokenIntent' }
+    },
+    {
+      handler: function (event) {
+        const skill = new AlexaSkill();
+        skill.intentHandlers = Object.assign({}, skill.intentHandlers, {
+          BrokenIntent: { call: () => handlerCalls++ }
+        });
+        return skill.execute(event);
+      }
+    }
+  );
+
+  assertFailure(result, 'Unsupported intent');
+  assert.equal(handlerCalls, 0);
+});
+
 test('unsupported request types fail with a clear message', async () => {
   const result = await invoke(
     { type: 'AudioPlayer.PlaybackStarted' },

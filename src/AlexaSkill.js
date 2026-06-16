@@ -235,7 +235,7 @@ AlexaSkill.prototype.eventHandlers = {
       intentHandler = hasOwn(this.intentHandlers, intentName)
         ? this.intentHandlers[intentName]
         : undefined;
-    if (intentHandler) {
+    if (typeof intentHandler === 'function') {
       console.log('dispatch intent = ' + intentName);
       return intentHandler.call(this, intent, session, response);
     } else {

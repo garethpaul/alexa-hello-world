@@ -3,6 +3,8 @@
 ## 2026-06-16
 
 - Resolved Alexa request handlers must be callable before session-start lifecycle hooks.
+- Resolved Alexa intent handlers must be callable before dispatch.
+  Malformed handler maps retain the stable unsupported-intent failure.
 
 ## 2026-06-15
 
