@@ -59,6 +59,7 @@ Priority:
   reusable base lifecycle defaults remain stable
 - Return stack-bearing `Error` objects for validation and dispatch failures
 - Validate primary and reprompt speech before constructing Alexa responses
+- Simple card titles and content must be non-empty strings before response construction.
 - Keep direct-response SSML speak envelopes validated in the shared primary
   and reprompt normalization path
 - Keep AWS setup steps explicit for first-time users

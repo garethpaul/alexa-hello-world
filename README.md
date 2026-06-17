@@ -177,6 +177,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
   speech validation and regression coverage.
 - See `docs/plans/2026-06-13-alexa-ssml-speak-envelope.md` for direct-response
   SSML root-envelope validation.
+- Simple card titles and content must be non-empty strings before response construction.
+  See `docs/plans/2026-06-17-001-fix-alexa-simple-card-validation-plan.md` for
+  the fail-closed response contract.
 - See `docs/plans/2026-06-13-alexa-exception-log-redaction.md` for the boundary
   between generic failure logs and detailed Lambda errors.
 

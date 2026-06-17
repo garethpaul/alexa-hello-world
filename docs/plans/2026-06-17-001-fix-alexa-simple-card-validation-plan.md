@@ -6,7 +6,7 @@ date: 2026-06-17
 
 # Alexa Simple Card Validation
 
-## Status: Planned
+## Status: Completed
 
 ## Summary
 
@@ -111,3 +111,18 @@ contract defines `Simple` cards as text-bearing `title` and `content` fields.
   `Simple` card provides text for both `title` and `content`.
 - Amazon Alexa Skills Kit, "Request and Response JSON Reference": response card
   text shares an 8,000-character aggregate limit, deferred from this narrow fix.
+
+## Verification Completed
+
+- The pre-fix focused regression reproduced 12 malformed title/content cases
+  that incorrectly succeeded or omitted the requested card.
+- Valid `askWithCard` coverage and all 12 malformed tell/ask cases pass through
+  the public `AlexaSkill.execute` path.
+- All 99 Node tests, ESLint, Prettier, source syntax checks, and shell syntax
+  checks passed.
+- Repository-root and external-directory `make check` passed the complete
+  maintained gate.
+- Seven isolated hostile mutations were rejected across title validation,
+  content validation, partial-card omission, focused tests, checker contracts,
+  README guidance, and completed-plan evidence.
+- No live Lambda or Alexa invocation was performed.

@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-17
+
+- Simple card titles and content must be non-empty strings before response construction.
+- Added valid tell/ask card coverage plus malformed, partial, and non-string
+  response regressions and mutation-sensitive baseline contracts.
+
 ## 2026-06-16
 
 - Resolved Alexa request handlers must be callable before session-start lifecycle hooks.

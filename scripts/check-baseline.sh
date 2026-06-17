@@ -59,6 +59,7 @@ for path in \
   "docs/plans/2026-06-14-alexa-async-handler.md" \
   "docs/plans/2026-06-15-alexa-event-handler-ownership.md" \
   "docs/plans/2026-06-16-alexa-callable-event-handlers.md" \
+  "docs/plans/2026-06-17-001-fix-alexa-simple-card-validation-plan.md" \
   "docs/plans/2026-06-15-alexa-intent-envelope-ownership.md" \
   "docs/plans/2026-06-15-alexa-request-locale-validation.md" \
   "docs/plans/2026-06-15-alexa-request-version-validation.md" \
@@ -66,6 +67,54 @@ for path in \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
+done
+
+for card_contract in \
+  "function createSimpleCard(title, content)" \
+  "!isNonEmptyString(title)" \
+  "Invalid card: title must be a non-empty string" \
+  "!isNonEmptyString(content)" \
+  "Invalid card: content must be a non-empty string" \
+  "hasOwn(options, 'cardTitle') || hasOwn(options, 'cardContent')" \
+  "alexaResponse.card = createSimpleCard("; do
+  if ! grep -Fq "$card_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep Simple card validation: $card_contract" >&2
+    exit 1
+  fi
+done
+
+for card_test_contract in \
+  "baseline checker preserves Simple card contracts" \
+  "askWithCard returns a Simple card and keeps the session open" \
+  "const helper = shouldAsk ? 'askWithCard' : 'tellWithCard';" \
+  'test(`${helper} rejects malformed ${field}`' \
+  "Invalid card: title must be a non-empty string" \
+  "Invalid card: content must be a non-empty string"; do
+  if ! grep -Fq "$card_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep Simple card coverage: $card_test_contract" >&2
+    exit 1
+  fi
+done
+
+card_guidance='Simple card titles and content must be non-empty strings before response construction.'
+for card_guidance_path in AGENTS.md README.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$card_guidance" "$ROOT_DIR/$card_guidance_path"; then
+    printf '%s\n' "$card_guidance_path must document Simple card validation." >&2
+    exit 1
+  fi
+done
+
+for card_plan_contract in \
+  "Status: Completed" \
+  "99 Node tests" \
+  "make check" \
+  "hostile mutations" \
+  "No live Lambda or Alexa invocation was performed"; do
+  if ! grep -Fq "$card_plan_contract" \
+    "$DOCS_PLANS/2026-06-17-001-fix-alexa-simple-card-validation-plan.md"; then
+    printf '%s\n' "Simple card plan must keep completion evidence: $card_plan_contract" >&2
+    exit 1
+  fi
 done
 
 for version_contract in \

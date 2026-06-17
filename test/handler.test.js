@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const test = require('node:test');
 
 delete process.env.ALEXA_SKILL_ID;
@@ -214,6 +215,31 @@ function responseHandler(output, reprompt, shouldAsk, now) {
   };
 }
 
+function cardResponseHandler(options) {
+  return function (event) {
+    const skill = new AlexaSkill();
+    skill.eventHandlers = Object.assign({}, skill.eventHandlers, {
+      onLaunch: function (launchRequest, session, response) {
+        if (options.shouldAsk) {
+          return response.askWithCard(
+            options.output,
+            options.reprompt,
+            options.cardTitle,
+            options.cardContent
+          );
+        }
+
+        return response.tellWithCard(
+          options.output,
+          options.cardTitle,
+          options.cardContent
+        );
+      }
+    });
+    return skill.execute(event);
+  };
+}
+
 function throwingResponseHandler(error) {
   return function (event) {
     const skill = new AlexaSkill();
@@ -239,6 +265,30 @@ function invokeAskResponse(output, reprompt) {
     { handler: responseHandler(output, reprompt, true) }
   );
 }
+
+function invokeCardResponse(options) {
+  return invoke(
+    { type: 'LaunchRequest' },
+    { handler: cardResponseHandler(options) }
+  );
+}
+
+test('baseline checker preserves Simple card contracts', () => {
+  const checker = fs.readFileSync(
+    require.resolve('../scripts/check-baseline.sh'),
+    'utf8'
+  );
+
+  for (const contract of [
+    'function createSimpleCard(title, content)',
+    "hasOwn(options, 'cardTitle') || hasOwn(options, 'cardContent')",
+    'askWithCard returns a Simple card and keeps the session open',
+    'Simple card titles and content must be non-empty strings before response construction.',
+    'Simple card plan must keep completion evidence'
+  ]) {
+    assert.ok(checker.includes(contract));
+  }
+});
 
 test('sample lifecycle handlers do not mutate the AlexaSkill prototype', () => {
   assert.equal(AlexaSkill.prototype.eventHandlers, baseEventHandlers);
@@ -439,6 +489,61 @@ test('invalid SSML reprompt fails through the shared envelope validation', async
     'Invalid speech output: SSML must use a speak envelope'
   );
 });
+
+test('askWithCard returns a Simple card and keeps the session open', async () => {
+  const result = await invokeCardResponse({
+    output: 'Primary speech',
+    reprompt: 'Reprompt speech',
+    cardTitle: 'Card title',
+    cardContent: 'Card content',
+    shouldAsk: true
+  });
+
+  assert.equal(result.type, 'succeed');
+  assert.deepEqual(result.response.response.card, {
+    type: 'Simple',
+    title: 'Card title',
+    content: 'Card content'
+  });
+  assert.equal(
+    result.response.response.reprompt.outputSpeech.text,
+    'Reprompt speech'
+  );
+  assert.equal(result.response.response.shouldEndSession, false);
+});
+
+for (const [field, value, message] of [
+  ['cardTitle', undefined, 'Invalid card: title must be a non-empty string'],
+  ['cardTitle', '   ', 'Invalid card: title must be a non-empty string'],
+  ['cardTitle', {}, 'Invalid card: title must be a non-empty string'],
+  [
+    'cardContent',
+    undefined,
+    'Invalid card: content must be a non-empty string'
+  ],
+  ['cardContent', '   ', 'Invalid card: content must be a non-empty string'],
+  ['cardContent', {}, 'Invalid card: content must be a non-empty string']
+]) {
+  for (const shouldAsk of [false, true]) {
+    const helper = shouldAsk ? 'askWithCard' : 'tellWithCard';
+
+    test(`${helper} rejects malformed ${field}`, async () => {
+      const options = {
+        output: 'Primary speech',
+        reprompt: 'Reprompt speech',
+        cardTitle: 'Card title',
+        cardContent: 'Card content',
+        shouldAsk
+      };
+      options[field] = value;
+
+      const result = await invokeCardResponse(options);
+
+      assertFailure(result, message);
+      assert.doesNotMatch(result.error.message, /\[object Object\]/);
+    });
+  }
+}
 
 for (const [name, output, message] of [
   [

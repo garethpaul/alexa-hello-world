@@ -379,6 +379,22 @@ function createSpeechObject(optionsParam) {
   };
 }
 
+function createSimpleCard(title, content) {
+  if (!isNonEmptyString(title)) {
+    throw new Error('Invalid card: title must be a non-empty string');
+  }
+
+  if (!isNonEmptyString(content)) {
+    throw new Error('Invalid card: content must be a non-empty string');
+  }
+
+  return {
+    type: 'Simple',
+    title: title,
+    content: content
+  };
+}
+
 Response.prototype = (function () {
   var buildSpeechletResponse = function (options) {
     var alexaResponse = {
@@ -390,12 +406,11 @@ Response.prototype = (function () {
         outputSpeech: createSpeechObject(options.reprompt)
       };
     }
-    if (options.cardTitle && options.cardContent) {
-      alexaResponse.card = {
-        type: 'Simple',
-        title: options.cardTitle,
-        content: options.cardContent
-      };
+    if (hasOwn(options, 'cardTitle') || hasOwn(options, 'cardContent')) {
+      alexaResponse.card = createSimpleCard(
+        options.cardTitle,
+        options.cardContent
+      );
     }
     var returnResult = {
       version: '1.0',
