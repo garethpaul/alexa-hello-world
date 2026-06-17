@@ -2,6 +2,9 @@
 
 ## 2026-06-17
 
+- Launch and Intent handlers must resolve to an owned version 1.0 Alexa response envelope before Lambda succeeds.
+- Added synchronous, asynchronous, inherited-field, future-field, and
+  SessionEnded response-boundary regressions.
 - Simple card titles and content must be non-empty strings before response construction.
 - Added valid tell/ask card coverage plus malformed, partial, and non-string
   response regressions and mutation-sensitive baseline contracts.

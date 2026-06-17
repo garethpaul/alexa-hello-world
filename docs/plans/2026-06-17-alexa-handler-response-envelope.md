@@ -1,6 +1,6 @@
 # Alexa Handler Response Envelope Validation
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -107,4 +107,15 @@ guidance, or falsify completion.
 
 ## Completed Verification
 
-To be recorded after implementation and validation.
+- The pre-fix focused run reproduced 22 malformed synchronous Launch and
+  asynchronous Intent results that incorrectly completed successfully.
+- Focused response-envelope coverage passed for invalid shapes, inherited
+  fields, future nested fields, and the unchanged SessionEnded lifecycle.
+- All 121 Node tests, ESLint, Prettier, source syntax checks, and shell syntax
+  checks passed.
+- Repository-root and external-directory `make check` passed the complete
+  maintained gate.
+- Eleven isolated hostile mutations were rejected across validator invocation,
+  awaited ordering, the SessionEnded exemption, owned fields, version and shape
+  checks, stable errors, tests, guidance, and completed-plan evidence.
+- No live Lambda or Alexa invocation was performed.

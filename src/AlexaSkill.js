@@ -21,6 +21,31 @@ function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+function isAlexaResponseEnvelope(value) {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    hasOwn(value, 'version') &&
+    value.version === '1.0' &&
+    hasOwn(value, 'response') &&
+    value.response !== null &&
+    typeof value.response === 'object' &&
+    !Array.isArray(value.response)
+  );
+}
+
+function validateHandlerResponse(requestType, value) {
+  if (
+    requestType !== 'SessionEndedRequest' &&
+    !isAlexaResponseEnvelope(value)
+  ) {
+    throw new Error('Invalid Alexa response envelope');
+  }
+
+  return value;
+}
+
 function hasSsmlSpeakEnvelope(speech) {
   var trimmedSpeech = speech.trim();
   var openingTag = trimmedSpeech.match(/^<speak(?:\s[^>]*)?>/);
@@ -305,13 +330,14 @@ AlexaSkill.prototype.execute = async function (event, context) {
       await sessionStartedHandler.call(this, event.request, event.session);
     }
 
-    return await requestHandler.call(
+    var handlerResponse = await requestHandler.call(
       this,
       event,
       context,
       new Response(event.session),
       eventHandler
     );
+    return validateHandlerResponse(event.request.type, handlerResponse);
   } catch (e) {
     console.log('Alexa request failed');
     throw e;

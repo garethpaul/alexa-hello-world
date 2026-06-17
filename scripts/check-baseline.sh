@@ -60,6 +60,7 @@ for path in \
   "docs/plans/2026-06-15-alexa-event-handler-ownership.md" \
   "docs/plans/2026-06-16-alexa-callable-event-handlers.md" \
   "docs/plans/2026-06-17-001-fix-alexa-simple-card-validation-plan.md" \
+  "docs/plans/2026-06-17-alexa-handler-response-envelope.md" \
   "docs/plans/2026-06-15-alexa-intent-envelope-ownership.md" \
   "docs/plans/2026-06-15-alexa-request-locale-validation.md" \
   "docs/plans/2026-06-15-alexa-request-version-validation.md" \
@@ -67,6 +68,68 @@ for path in \
   "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
+done
+
+for response_envelope_contract in \
+  "function isAlexaResponseEnvelope(value)" \
+  "hasOwn(value, 'version')" \
+  "value.version === '1.0'" \
+  "hasOwn(value, 'response')" \
+  "value.response !== null" \
+  "typeof value.response === 'object'" \
+  "!Array.isArray(value.response)" \
+  "function validateHandlerResponse(requestType, value)" \
+  "requestType !== 'SessionEndedRequest'" \
+  "throw new Error('Invalid Alexa response envelope')" \
+  "var handlerResponse = await requestHandler.call(" \
+  "return validateHandlerResponse(event.request.type, handlerResponse);"; do
+  if ! grep -Fq "$response_envelope_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep handler response-envelope contract: $response_envelope_contract" >&2
+    exit 1
+  fi
+done
+
+handler_response_line=$(grep -nF "var handlerResponse = await requestHandler.call(" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+handler_response_validation_line=$(grep -nF "return validateHandlerResponse(event.request.type, handlerResponse);" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$handler_response_line" ] || [ -z "$handler_response_validation_line" ] || \
+   [ "$handler_response_line" -ge "$handler_response_validation_line" ]; then
+  printf '%s\n' "AlexaSkill must await handler results before validating the response envelope." >&2
+  exit 1
+fi
+
+for response_envelope_test_contract in \
+  'synchronous Launch handler rejects ${name} result' \
+  'asynchronous Intent handler rejects ${name} result' \
+  "handler response envelope requires owned version and response fields" \
+  "handler response envelope preserves future nested fields" \
+  "session ended request completes without a speech response" \
+  "assertFailure(result, 'Invalid Alexa response envelope');" \
+  "assert.strictEqual(result.response, response);"; do
+  if ! grep -Fq "$response_envelope_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep response-envelope case: $response_envelope_test_contract" >&2
+    exit 1
+  fi
+done
+
+response_envelope_guidance='Launch and Intent handlers must resolve to an owned version 1.0 Alexa response envelope before Lambda succeeds.'
+for response_envelope_guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$response_envelope_guidance" "$ROOT_DIR/$response_envelope_guidance_path"; then
+    printf '%s\n' "$response_envelope_guidance_path must document handler response-envelope validation." >&2
+    exit 1
+  fi
+done
+
+for response_envelope_plan_contract in \
+  'Status: Completed' \
+  'All 121 Node tests' \
+  'Repository-root and external-directory `make check`' \
+  'hostile mutations' \
+  'No live Lambda or Alexa invocation was performed'; do
+  if ! grep -Fq "$response_envelope_plan_contract" \
+    "$DOCS_PLANS/2026-06-17-alexa-handler-response-envelope.md"; then
+    printf '%s\n' "Handler response-envelope plan must keep completion evidence: $response_envelope_plan_contract" >&2
+    exit 1
+  fi
 done
 
 for card_contract in \
@@ -240,7 +303,7 @@ done
 for async_skill_contract in \
   "AlexaSkill.prototype.execute = async function (event, context)" \
   "await sessionStartedHandler.call(this, event.request, event.session)" \
-  "return await requestHandler.call" \
+  "var handlerResponse = await requestHandler.call" \
   "throw e;"; do
   if ! grep -Fq "$async_skill_contract" "$ALEXA_SKILL"; then
     printf '%s\n' "AlexaSkill must keep promise completion contract: $async_skill_contract" >&2

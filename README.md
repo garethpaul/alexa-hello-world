@@ -128,6 +128,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Resolved Alexa request handlers must be callable before session-start lifecycle hooks.
 - Resolved Alexa intent handlers must be callable before dispatch.
 - Resolved Alexa lifecycle event handlers must be callable before lifecycle hooks or request dispatch.
+- Launch and Intent handlers must resolve to an owned version 1.0 Alexa response envelope before Lambda succeeds.
 - Rejected dispatch names are not included in failure diagnostics or logs,
   preventing embedded control characters from forging log entries.
 - Primary and reprompt speech are validated before response construction.
@@ -180,6 +181,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Simple card titles and content must be non-empty strings before response construction.
   See `docs/plans/2026-06-17-001-fix-alexa-simple-card-validation-plan.md` for
   the fail-closed response contract.
+- See `docs/plans/2026-06-17-alexa-handler-response-envelope.md` for validation
+  of custom Launch and Intent handler results at the Lambda boundary.
 - See `docs/plans/2026-06-13-alexa-exception-log-redaction.md` for the boundary
   between generic failure logs and detailed Lambda errors.
 

@@ -62,6 +62,7 @@ Helpful reports include:
 - Resolved Alexa request handlers must be callable before session-start lifecycle hooks.
 - Resolved Alexa intent handlers must be callable before dispatch.
 - Resolved Alexa lifecycle event handlers must be callable before lifecycle hooks or request dispatch.
+- Launch and Intent handlers must resolve to an owned version 1.0 Alexa response envelope before Lambda succeeds.
 - Primary and reprompt speech must be validated before response construction;
   unsupported types and missing, blank, or non-string speech fail before
   the promise-returning Lambda handler resolves with a payload.

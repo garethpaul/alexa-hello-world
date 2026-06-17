@@ -9,6 +9,7 @@ const baseEventHandlers = AlexaSkill.prototype.eventHandlers;
 const baseLifecycleHandlers = {
   onSessionStarted: baseEventHandlers.onSessionStarted,
   onLaunch: baseEventHandlers.onLaunch,
+  onIntent: baseEventHandlers.onIntent,
   onSessionEnded: baseEventHandlers.onSessionEnded
 };
 const { configuredSkillId, requiredSkillId, handler } = require('../src/index');
@@ -125,6 +126,29 @@ function invoke(request, options = {}) {
   }
 
   return invokeEvent(event, options);
+}
+
+function invokeHandlerResult(requestType, resultHandler, options = {}) {
+  const skill = new AlexaSkill();
+  skill.eventHandlers = Object.assign({}, baseLifecycleHandlers, {
+    onLaunch: resultHandler
+  });
+  skill.intentHandlers = {
+    ResponseEnvelopeIntent: resultHandler
+  };
+
+  const request =
+    requestType === 'IntentRequest'
+      ? {
+          type: requestType,
+          intent: { name: 'ResponseEnvelopeIntent' }
+        }
+      : { type: requestType };
+
+  return invoke(request, {
+    captureLogs: options.captureLogs,
+    handler: (event, context) => skill.execute(event, context)
+  });
 }
 
 test('Alexa request envelopes require their own protocol version', async () => {
@@ -625,6 +649,72 @@ test('help intent returns help prompt and keeps the session open', async () => {
     'You can say hello to me!'
   );
   assert.equal(result.response.response.shouldEndSession, false);
+});
+
+const invalidHandlerResults = [
+  ['undefined', () => undefined],
+  ['null', () => null],
+  ['string', () => 'caller-controlled-response'],
+  ['number', () => 42],
+  ['array', () => []],
+  ['unversioned object', () => ({ response: {} })],
+  ['wrong version', () => ({ version: '2.0', response: {} })],
+  ['missing response', () => ({ version: '1.0' })],
+  ['null response', () => ({ version: '1.0', response: null })],
+  ['array response', () => ({ version: '1.0', response: [] })]
+];
+
+for (const [name, createResult] of invalidHandlerResults) {
+  test(`synchronous Launch handler rejects ${name} result`, async () => {
+    const result = await invokeHandlerResult('LaunchRequest', createResult, {
+      captureLogs: true
+    });
+
+    assertFailure(result, 'Invalid Alexa response envelope');
+    assert.doesNotMatch(result.error.message, /caller-controlled-response/);
+    assert.doesNotMatch(result.logs.join('\n'), /caller-controlled-response/);
+  });
+
+  test(`asynchronous Intent handler rejects ${name} result`, async () => {
+    const result = await invokeHandlerResult(
+      'IntentRequest',
+      async () => createResult(),
+      { captureLogs: true }
+    );
+
+    assertFailure(result, 'Invalid Alexa response envelope');
+    assert.doesNotMatch(result.error.message, /caller-controlled-response/);
+    assert.doesNotMatch(result.logs.join('\n'), /caller-controlled-response/);
+  });
+}
+
+test('handler response envelope requires owned version and response fields', async () => {
+  const inheritedVersion = Object.assign(Object.create({ version: '1.0' }), {
+    response: {}
+  });
+  const inheritedResponse = Object.assign(Object.create({ response: {} }), {
+    version: '1.0'
+  });
+
+  for (const response of [inheritedVersion, inheritedResponse]) {
+    const result = await invokeHandlerResult('LaunchRequest', () => response);
+    assertFailure(result, 'Invalid Alexa response envelope');
+  }
+});
+
+test('handler response envelope preserves future nested fields', async () => {
+  const response = {
+    version: '1.0',
+    response: {
+      directives: [{ type: 'Future.Directive' }],
+      futureResponseField: true
+    },
+    futureEnvelopeField: true
+  };
+  const result = await invokeHandlerResult('IntentRequest', () => response);
+
+  assert.equal(result.type, 'succeed');
+  assert.strictEqual(result.response, response);
 });
 
 test('session ended request completes without a speech response', async () => {
