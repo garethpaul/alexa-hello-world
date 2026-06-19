@@ -13,7 +13,7 @@ least-privilege workflow settings.
 - Hosted CI installs exactly the dependency graph in `package-lock.json`.
 - Hosted CI runs the same `make check` command documented for contributors.
 - Actions are pinned to immutable commits, repository permissions are read-only,
-  and the job has a bounded timeout.
+  checkout credentials are not persisted, and the job has a bounded timeout.
 - The repository baseline script verifies the workflow contract so CI cannot
   silently lose required checks.
 

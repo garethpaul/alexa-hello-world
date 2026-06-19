@@ -3,11 +3,14 @@ set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 README="$ROOT_DIR/README.md"
+SECURITY="$ROOT_DIR/SECURITY.md"
+CHANGES="$ROOT_DIR/CHANGES.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 PACKAGE_JSON="$ROOT_DIR/package.json"
 GITIGNORE="$ROOT_DIR/.gitignore"
 DOCS_PLANS="$ROOT_DIR/docs/plans"
 ALEXA_SKILL="$ROOT_DIR/src/AlexaSkill.js"
+INDEX="$ROOT_DIR/src/index.js"
 
 require_file() {
   path=$1
@@ -18,11 +21,13 @@ require_file() {
 }
 
 for path in \
+  "AGENTS.md" \
   ".circleci/config.yml" \
   ".gitignore" \
   ".prettierignore" \
   ".prettierrc.json" \
   "CHANGES.md" \
+  "INTEGRATION_VERIFICATION.md" \
   "Makefile" \
   "README.md" \
   ".github/workflows/check.yml" \
@@ -40,15 +45,647 @@ for path in \
   "docs/plans/2026-06-09-alexa-dispatch-key-type-validation.md" \
   "docs/plans/2026-06-09-scripted-baseline-check.md" \
   "docs/plans/2026-06-12-alexa-speech-output-validation.md" \
+  "docs/plans/2026-06-13-alexa-exception-log-redaction.md" \
+  "docs/plans/2026-06-13-alexa-lambda-skill-id-required.md" \
+  "docs/plans/2026-06-13-alexa-request-id-validation.md" \
+  "docs/plans/2026-06-13-alexa-request-timestamp-freshness.md" \
+  "docs/plans/2026-06-13-alexa-ssml-speak-envelope.md" \
+  "docs/plans/2026-06-14-make-root-override-protection.md" \
+  "docs/plans/2026-06-14-alexa-session-new-validation.md" \
+  "docs/plans/2026-06-14-alexa-session-id-validation.md" \
+  "docs/plans/2026-06-14-alexa-integration-verification-checklist.md" \
+  "docs/plans/2026-06-14-alexa-application-identity-ownership.md" \
+  "docs/plans/2026-06-14-alexa-request-envelope-ownership.md" \
+  "docs/plans/2026-06-14-alexa-async-handler.md" \
+  "docs/plans/2026-06-15-alexa-event-handler-ownership.md" \
+  "docs/plans/2026-06-16-alexa-callable-event-handlers.md" \
+  "docs/plans/2026-06-17-001-fix-alexa-simple-card-validation-plan.md" \
+  "docs/plans/2026-06-17-alexa-handler-response-envelope.md" \
+  "docs/plans/2026-06-15-alexa-intent-envelope-ownership.md" \
+  "docs/plans/2026-06-15-alexa-request-locale-validation.md" \
+  "docs/plans/2026-06-15-alexa-request-version-validation.md" \
+  "docs/plans/2026-06-15-alexa-session-attributes-ownership.md" \
+  "docs/readme-overview.svg" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
 
+for response_envelope_contract in \
+  "object !== null" \
+  "typeof object === 'object' || typeof object === 'function'" \
+  "Object.prototype.hasOwnProperty.call(object, property)" \
+  "function isAlexaResponseEnvelope(value)" \
+  "hasOwn(value, 'version')" \
+  "value.version === '1.0'" \
+  "hasOwn(value, 'response')" \
+  "value.response !== null" \
+  "typeof value.response === 'object'" \
+  "!Array.isArray(value.response)" \
+  "function validateHandlerResponse(requestType, value)" \
+  "requestType !== 'SessionEndedRequest'" \
+  "throw new Error('Invalid Alexa response envelope')" \
+  "var handlerResponse = await requestHandler.call(" \
+  "return validateHandlerResponse(event.request.type, handlerResponse);"; do
+  if ! grep -Fq "$response_envelope_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep handler response-envelope contract: $response_envelope_contract" >&2
+    exit 1
+  fi
+done
+
+handler_response_line=$(grep -nF "var handlerResponse = await requestHandler.call(" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+handler_response_validation_line=$(grep -nF "return validateHandlerResponse(event.request.type, handlerResponse);" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$handler_response_line" ] || [ -z "$handler_response_validation_line" ] || \
+   [ "$handler_response_line" -ge "$handler_response_validation_line" ]; then
+  printf '%s\n' "AlexaSkill must await handler results before validating the response envelope." >&2
+  exit 1
+fi
+
+for response_envelope_test_contract in \
+  'synchronous Launch handler rejects ${name} result' \
+  'asynchronous Intent handler rejects ${name} result' \
+  "handler response envelope requires owned version and response fields" \
+  "handler response envelope preserves future nested fields" \
+  "session ended request completes without a speech response" \
+  "assertFailure(result, 'Invalid Alexa response envelope');" \
+  "assert.strictEqual(result.response, response);"; do
+  if ! grep -Fq "$response_envelope_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep response-envelope case: $response_envelope_test_contract" >&2
+    exit 1
+  fi
+done
+
+response_envelope_guidance='Launch and Intent handlers must resolve to an owned version 1.0 Alexa response envelope before Lambda succeeds.'
+for response_envelope_guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$response_envelope_guidance" "$ROOT_DIR/$response_envelope_guidance_path"; then
+    printf '%s\n' "$response_envelope_guidance_path must document handler response-envelope validation." >&2
+    exit 1
+  fi
+done
+
+for response_envelope_plan_contract in \
+  'Status: Completed' \
+  'All 123 Node tests' \
+  'Repository-root and external-directory `make check`' \
+  'hostile mutations' \
+  'No live Lambda or Alexa invocation was performed'; do
+  if ! grep -Fq "$response_envelope_plan_contract" \
+    "$DOCS_PLANS/2026-06-17-alexa-handler-response-envelope.md"; then
+    printf '%s\n' "Handler response-envelope plan must keep completion evidence: $response_envelope_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for card_contract in \
+  "function createSimpleCard(title, content)" \
+  "!isNonEmptyString(title)" \
+  "Invalid card: title must be a non-empty string" \
+  "!isNonEmptyString(content)" \
+  "Invalid card: content must be a non-empty string" \
+  "hasOwn(options, 'cardTitle') || hasOwn(options, 'cardContent')" \
+  "alexaResponse.card = createSimpleCard("; do
+  if ! grep -Fq "$card_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep Simple card validation: $card_contract" >&2
+    exit 1
+  fi
+done
+
+for card_test_contract in \
+  "baseline checker preserves Simple card contracts" \
+  "askWithCard returns a Simple card and keeps the session open" \
+  "const helper = shouldAsk ? 'askWithCard' : 'tellWithCard';" \
+  'test(`${helper} rejects malformed ${field}`' \
+  "Invalid card: title must be a non-empty string" \
+  "Invalid card: content must be a non-empty string"; do
+  if ! grep -Fq "$card_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep Simple card coverage: $card_test_contract" >&2
+    exit 1
+  fi
+done
+
+card_guidance='Simple card titles and content must be non-empty strings before response construction.'
+for card_guidance_path in AGENTS.md README.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$card_guidance" "$ROOT_DIR/$card_guidance_path"; then
+    printf '%s\n' "$card_guidance_path must document Simple card validation." >&2
+    exit 1
+  fi
+done
+
+for card_plan_contract in \
+  "Status: Completed" \
+  "99 Node tests" \
+  "make check" \
+  "hostile mutations" \
+  "No live Lambda or Alexa invocation was performed"; do
+  if ! grep -Fq "$card_plan_contract" \
+    "$DOCS_PLANS/2026-06-17-001-fix-alexa-simple-card-validation-plan.md"; then
+    printf '%s\n' "Simple card plan must keep completion evidence: $card_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for version_contract in \
+  "!event || !hasOwn(event, 'version')" \
+  "Invalid Alexa event: missing version" \
+  "event.version !== '1.0'" \
+  "Invalid Alexa event: version must be 1.0"; do
+  if ! grep -Fq "$version_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep request version validation: $version_contract" >&2
+    exit 1
+  fi
+done
+
+version_ownership_line=$(grep -nF "!event || !hasOwn(event, 'version')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+version_value_line=$(grep -nF "event.version !== '1.0'" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+session_ownership_line=$(grep -nF "!hasOwn(event, 'session')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$version_ownership_line" ] || [ -z "$version_value_line" ] || \
+   [ -z "$session_ownership_line" ] || \
+   [ "$version_ownership_line" -ge "$version_value_line" ] || \
+   [ "$version_value_line" -ge "$session_ownership_line" ]; then
+  printf '%s\n' "AlexaSkill must validate version ownership and value before nested event fields." >&2
+  exit 1
+fi
+
+for version_test_contract in \
+  "Alexa request envelopes require their own protocol version" \
+  "Object.create({ version: '1.0' })" \
+  "Alexa request envelope versions must use supported value 1.0" \
+  "['', '   ', 1, null, {}, [], '2.0']" \
+  "Alexa request envelopes tolerate unknown additional properties" \
+  "futureEnvelopeProperty: { ignored: true }"; do
+  if ! grep -Fq "$version_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep request version coverage: $version_test_contract" >&2
+    exit 1
+  fi
+done
+
+version_guidance='Alexa events must own an exact `version: "1.0"` protocol field before nested request validation.'
+for guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$version_guidance" "$ROOT_DIR/$guidance_path"; then
+    printf '%s\n' "$guidance_path must document request version validation." >&2
+    exit 1
+  fi
+done
+
+for version_plan_contract in \
+  "status: completed" \
+  "77 tests" \
+  "make check" \
+  "hostile mutations" \
+  "No live Lambda or Alexa invocation was performed"; do
+  if ! grep -Fqi "$version_plan_contract" \
+    "$DOCS_PLANS/2026-06-15-alexa-request-version-validation.md"; then
+    printf '%s\n' "Request-version plan must keep completion evidence: $version_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for async_index_contract in \
+  "exports.handler = async function (event, context)" \
+  "return helloWorld.execute(event, context);"; do
+  if ! grep -Fq "$async_index_contract" "$INDEX"; then
+    printf '%s\n' "Lambda entry point must keep async return contract: $async_index_contract" >&2
+    exit 1
+  fi
+done
+
+for intent_envelope_contract in \
+  "!hasOwn(intentRequest, 'intent') ||" \
+  "!hasOwn(intentRequest.intent, 'name')" \
+  "Invalid intent request: missing intent.name"; do
+  if ! grep -Fq "$intent_envelope_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep intent envelope ownership: $intent_envelope_contract" >&2
+    exit 1
+  fi
+done
+
+intent_envelope_line=$(grep -nF "!hasOwn(intentRequest, 'intent')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+intent_name_line=$(grep -nF "!hasOwn(intentRequest.intent, 'name')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$intent_envelope_line" ] || [ -z "$intent_name_line" ] || \
+   [ "$intent_envelope_line" -ge "$intent_name_line" ]; then
+  printf '%s\n' "AlexaSkill must validate intent envelope ownership before intent.name ownership." >&2
+  exit 1
+fi
+
+intent_envelope_test_body=$(awk '
+  /^test.*inherited intent envelopes are rejected before dispatch/ { capture = 1 }
+  capture && found && /^test\(/ { exit }
+  capture { print; found = 1 }
+' "$ROOT_DIR/test/handler.test.js")
+
+for intent_envelope_test_contract in \
+  "inherited intent envelopes are rejected before dispatch" \
+  "const request = Object.create({" \
+  "intent: { name: 'HelloWorldIntent' }" \
+  "assertFailure(result, 'Invalid intent request: missing intent.name');"; do
+  if ! printf '%s\n' "$intent_envelope_test_body" | grep -Fq "$intent_envelope_test_contract"; then
+    printf '%s\n' "Handler tests must keep intent envelope ownership: $intent_envelope_test_contract" >&2
+    exit 1
+  fi
+done
+
+intent_envelope_guidance='Intent requests must own their intent envelope before intent names are trusted.'
+for guidance_path in README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$intent_envelope_guidance" "$ROOT_DIR/$guidance_path"; then
+    printf '%s\n' "$guidance_path must document intent envelope ownership." >&2
+    exit 1
+  fi
+done
+
+for intent_envelope_plan_contract in \
+  "status: completed" \
+  "make check" \
+  "hostile mutations" \
+  "No live Lambda or Alexa invocation was performed"; do
+  if ! grep -Fqi "$intent_envelope_plan_contract" \
+    "$DOCS_PLANS/2026-06-15-alexa-intent-envelope-ownership.md"; then
+    printf '%s\n' "Intent-envelope ownership plan must keep completion evidence: $intent_envelope_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for async_skill_contract in \
+  "AlexaSkill.prototype.execute = async function (event, context)" \
+  "await sessionStartedHandler.call(this, event.request, event.session)" \
+  "var handlerResponse = await requestHandler.call" \
+  "throw e;"; do
+  if ! grep -Fq "$async_skill_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep promise completion contract: $async_skill_contract" >&2
+    exit 1
+  fi
+done
+
+if [ "$(grep -Fc "return buildSpeechletResponse" "$ALEXA_SKILL")" -ne 4 ]; then
+  printf '%s\n' "All four Alexa response helpers must return their response payload." >&2
+  exit 1
+fi
+
+if ! grep -Fq "!hasOwn(event.session, 'attributes') ||" "$ALEXA_SKILL" ||
+   ! grep -Fq "!isSessionAttributesObject(event.session.attributes)" "$ALEXA_SKILL" ||
+   ! grep -Fq "Object.defineProperty(event.session, 'attributes', {" "$ALEXA_SKILL"; then
+  printf '%s\n' "AlexaSkill must normalize inherited or malformed session attributes." >&2
+  exit 1
+fi
+
+for session_attributes_test_contract in \
+  "malformed session attributes are reset before responses are built" \
+  "inherited session attributes are reset before responses are built" \
+  "assert.equal(result.response.sessionAttributes.inherited, undefined);" \
+  "assert.equal(interceptedAttributes, undefined);" \
+  "assert.equal(Object.hasOwn(session, 'attributes'), true);"; do
+  if ! grep -Fq "$session_attributes_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep session attribute ownership: $session_attributes_test_contract" >&2
+    exit 1
+  fi
+done
+
+session_attributes_guidance='Only owned Alexa session attributes are preserved.'
+for guidance_path in README.md SECURITY.md VISION.md AGENTS.md CHANGES.md; do
+  if ! grep -Fq "$session_attributes_guidance" "$ROOT_DIR/$guidance_path"; then
+    printf '%s\n' "$guidance_path must document session attribute ownership." >&2
+    exit 1
+  fi
+done
+
+for session_attributes_plan_contract in \
+  "status: completed" \
+  "hasOwn(event.session, 'attributes')" \
+  "make check" \
+  "hostile mutations"; do
+  if ! grep -Fq "$session_attributes_plan_contract" \
+    "$DOCS_PLANS/2026-06-15-alexa-session-attributes-ownership.md"; then
+    printf '%s\n' "Session attribute ownership plan must preserve completion evidence: $session_attributes_plan_contract" >&2
+    exit 1
+  fi
+done
+
+if grep -Eq 'context\.(succeed|fail)' "$ROOT_DIR/src/AlexaSkill.js" "$INDEX"; then
+  printf '%s\n' "Runtime source must not restore legacy Lambda context completion." >&2
+  exit 1
+fi
+
+for async_test_contract in \
+  "Lambda handler resolves through its returned promise" \
+  "Lambda handler rejects through its returned promise" \
+  "AlexaSkill awaits asynchronous lifecycle handlers before dispatch" \
+  "AlexaSkill preserves Lambda context for custom request handlers"; do
+  if ! grep -Fq "$async_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep async Lambda contract: $async_test_contract" >&2
+    exit 1
+  fi
+done
+
+for async_doc_contract in \
+  "$README|promise-returning Lambda handler" \
+  "$SECURITY|promise-returning Lambda handler" \
+  "$ROOT_DIR/VISION.md|promise-returning Lambda handler" \
+  "$CHANGES|promise-returning Lambda"; do
+  async_doc=${async_doc_contract%%|*}
+  async_text=${async_doc_contract#*|}
+  if ! grep -Fq "$async_text" "$async_doc"; then
+    printf '%s\n' "$async_doc must document async Lambda completion." >&2
+    exit 1
+  fi
+done
+
+for async_plan_contract in \
+  "status: completed" \
+  "make check" \
+  "hostile mutations" \
+  "No live Lambda or Alexa invocation was performed"; do
+  if ! grep -Fqi "$async_plan_contract" \
+    "$DOCS_PLANS/2026-06-14-alexa-async-handler.md"; then
+    printf '%s\n' "Async Lambda plan must keep completion evidence: $async_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for event_handler_ownership_contract in \
+  "HelloWorld.prototype.eventHandlers = Object.create(" \
+  "AlexaSkill.prototype.eventHandlers"; do
+  if ! grep -Fq "$event_handler_ownership_contract" "$INDEX"; then
+    printf '%s\n' "HelloWorld must own its lifecycle handler table: $event_handler_ownership_contract" >&2
+    exit 1
+  fi
+done
+
+event_handler_table_line=$(grep -nF "HelloWorld.prototype.eventHandlers = Object.create(" "$INDEX" | head -n 1 | cut -d: -f1)
+event_handler_registration_line=$(grep -nF "HelloWorld.prototype.eventHandlers.onSessionStarted" "$INDEX" | head -n 1 | cut -d: -f1)
+if [ -z "$event_handler_table_line" ] || [ -z "$event_handler_registration_line" ] || \
+   [ "$event_handler_table_line" -ge "$event_handler_registration_line" ]; then
+  printf '%s\n' "HelloWorld must establish lifecycle handler ownership before registration." >&2
+  exit 1
+fi
+
+for event_handler_ownership_test_contract in \
+  "sample lifecycle handlers do not mutate the AlexaSkill prototype" \
+  "assert.equal(AlexaSkill.prototype.eventHandlers, baseEventHandlers)" \
+  "baseLifecycleHandlers.onSessionStarted"; do
+  if ! grep -Fq "$event_handler_ownership_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must preserve lifecycle table ownership: $event_handler_ownership_test_contract" >&2
+    exit 1
+  fi
+done
+
+for event_handler_ownership_document in \
+  "$ROOT_DIR/AGENTS.md" \
+  "$README" \
+  "$SECURITY" \
+  "$ROOT_DIR/VISION.md" \
+  "$CHANGES"; do
+  if ! grep -Fq "subclass-owned lifecycle handler table" "$event_handler_ownership_document"; then
+    printf '%s\n' "$event_handler_ownership_document must document lifecycle handler ownership." >&2
+    exit 1
+  fi
+done
+
+for event_handler_ownership_plan_contract in \
+  "status: completed" \
+  "make check" \
+  "hostile mutations" \
+  "No live Lambda or Alexa invocation was performed"; do
+  if ! grep -Fqi "$event_handler_ownership_plan_contract" \
+    "$DOCS_PLANS/2026-06-15-alexa-event-handler-ownership.md"; then
+    printf '%s\n' "Event-handler ownership plan must keep completion evidence: $event_handler_ownership_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for request_envelope_contract in \
+  "!hasOwn(event, 'request')" \
+  "Invalid Alexa event: missing request.type"; do
+  if ! grep -Fq "$request_envelope_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep request envelope ownership: $request_envelope_contract" >&2
+    exit 1
+  fi
+done
+
+request_envelope_line=$(grep -nF "!hasOwn(event, 'request')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+request_type_line=$(grep -nF "hasOwn(event.request, 'type')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$request_envelope_line" ] || [ -z "$request_type_line" ] || \
+   [ "$request_envelope_line" -ge "$request_type_line" ]; then
+  printf '%s\n' "AlexaSkill must validate request envelope ownership before nested request fields." >&2
+  exit 1
+fi
+
+for request_envelope_test_contract in \
+  "Alexa events require their own request envelope" \
+  "Object.create({ request: inheritedRequest })" \
+  "Invalid Alexa event: missing request.type"; do
+  if ! grep -Fq "$request_envelope_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep request envelope ownership: $request_envelope_test_contract" >&2
+    exit 1
+  fi
+done
+
+for request_envelope_document in \
+  "$README" \
+  "$SECURITY" \
+  "$ROOT_DIR/VISION.md" \
+  "$CHANGES"; do
+  if ! grep -Fq "own request envelope" "$request_envelope_document"; then
+    printf '%s\n' "$request_envelope_document must document own request envelope validation." >&2
+    exit 1
+  fi
+done
+
+for request_envelope_plan_contract in \
+  "status: completed" \
+  "make check" \
+  "mutations"; do
+  if ! grep -Fqi "$request_envelope_plan_contract" \
+    "$DOCS_PLANS/2026-06-14-alexa-request-envelope-ownership.md"; then
+    printf '%s\n' "Request envelope plan must keep completion evidence: $request_envelope_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for application_identity_contract in \
+  "hasOwn(event, 'session')" \
+  "hasOwn(event.session, 'application')" \
+  "hasOwn(event.session.application, 'applicationId')" \
+  "Invalid Alexa event: missing session.application.applicationId"; do
+  if ! grep -Fq "$application_identity_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep application identity ownership: $application_identity_contract" >&2
+    exit 1
+  fi
+done
+
+application_identity_line=$(grep -nF "hasOwn(event, 'session')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+request_id_line=$(grep -nF "hasOwn(event.request, 'requestId')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$application_identity_line" ] || [ -z "$request_id_line" ] || \
+   [ "$application_identity_line" -ge "$request_id_line" ]; then
+  printf '%s\n' "AlexaSkill must validate application identity ownership before request metadata." >&2
+  exit 1
+fi
+
+for application_identity_test_contract in \
+  "Alexa application identity fields must be own properties" \
+  "Object.create({ session: validSession })" \
+  "application: { applicationId: inheritedIdentity }" \
+  "applicationId: inheritedIdentity" \
+  "assert.doesNotMatch(logText, /forged-inherited/)"; do
+  if ! grep -Fq "$application_identity_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep application identity ownership: $application_identity_test_contract" >&2
+    exit 1
+  fi
+done
+
+for application_identity_document in \
+  "$README" \
+  "$SECURITY" \
+  "$ROOT_DIR/VISION.md" \
+  "$CHANGES"; do
+  if ! grep -Fq "own application identity" "$application_identity_document"; then
+    printf '%s\n' "$application_identity_document must document own application identity fields." >&2
+    exit 1
+  fi
+done
+
+for application_identity_plan_contract in \
+  "Status: Completed" \
+  "make check" \
+  "mutations"; do
+  if ! grep -Fqi "$application_identity_plan_contract" \
+    "$DOCS_PLANS/2026-06-14-alexa-application-identity-ownership.md"; then
+    printf '%s\n' "Application identity plan must keep completion evidence: $application_identity_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for integration_contract in \
+  'commit SHA and pull request' \
+  'ALEXA_SKILL_ID' \
+  'Trigger restricted' \
+  'Launch request' \
+  'Session ended request' \
+  'stale, future, or malformed timestamps' \
+  'Do not convert `not run` into passing evidence.' \
+  'request IDs, session IDs, utterances' \
+  'known-good version' \
+  'every Lambda and Alexa integration row as' \
+  'unexecuted'; do
+  if ! grep -Fq "$integration_contract" "$ROOT_DIR/INTEGRATION_VERIFICATION.md"; then
+    printf '%s\n' "Integration checklist must keep contract: $integration_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq 'INTEGRATION_VERIFICATION.md' "$README" || \
+   ! grep -Fq 'explicit unexecuted results' "$README" || \
+   ! grep -Fqi 'integration matrix' "$ROOT_DIR/VISION.md" || \
+   ! grep -Fq 'every cloud row explicitly unexecuted' "$CHANGES"; then
+  printf '%s\n' 'Repository guidance must document the unexecuted Alexa integration matrix.' >&2
+  exit 1
+fi
+
+for integration_plan_contract in \
+  'Status: Completed' \
+  'make check' \
+  'hostile mutations' \
+  'No Lambda, IAM, Alexa developer-console, trigger, or live invocation scenario was executed'; do
+  if ! grep -Fq "$integration_plan_contract" \
+    "$DOCS_PLANS/2026-06-14-alexa-integration-verification-checklist.md"; then
+    printf '%s\n' "Integration plan must preserve completion evidence: $integration_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for session_id_contract in \
+  "hasOwn(event.session, 'sessionId')" \
+  "isNonEmptyString(event.session.sessionId)" \
+  "Invalid Alexa event: missing session.sessionId" \
+  "Invalid Alexa event: session.sessionId must be a non-empty string"; do
+  if ! grep -Fq "$session_id_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep session ID contract: $session_id_contract" >&2
+    exit 1
+  fi
+done
+
+session_id_line=$(grep -nF "hasOwn(event.session, 'sessionId')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+session_new_line=$(grep -nF "hasOwn(event.session, 'new')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+authorization_line=$(grep -nF "event.session.application.applicationId !== this._appId" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$session_id_line" ] || [ -z "$session_new_line" ] || [ -z "$authorization_line" ] ||
+   [ "$session_id_line" -ge "$session_new_line" ] ||
+   [ "$session_id_line" -ge "$authorization_line" ]; then
+  printf '%s\n' "AlexaSkill must validate session ID shape before lifecycle and application ID authorization." >&2
+  exit 1
+fi
+
+for session_id_test_contract in \
+  "Alexa sessions require their own session ID" \
+  "Alexa session IDs must be non-empty strings" \
+  "session ID failures do not reflect caller input into logs or failures" \
+  "session ID shape is validated before lifecycle and application authorization"; do
+  if ! grep -Fq "$session_id_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep session ID contract: $session_id_test_contract" >&2
+    exit 1
+  fi
+done
+
+for session_id_doc_contract in \
+  "$README|own non-empty string \`sessionId\`" \
+  "$SECURITY|own non-empty string \`session.sessionId\`" \
+  "$ROOT_DIR/VISION.md|Require each Alexa session to own a non-empty string session ID" \
+  "$CHANGES|own non-empty string \`sessionId\`"; do
+  session_id_doc=${session_id_doc_contract%%|*}
+  session_id_text=${session_id_doc_contract#*|}
+  if ! grep -Fq "$session_id_text" "$session_id_doc"; then
+    printf '%s\n' "$session_id_doc must document session ID validation." >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq "Status: Completed" "$DOCS_PLANS/2026-06-14-alexa-session-id-validation.md"; then
+  printf '%s\n' "Alexa session ID validation plan must record completed status." >&2
+  exit 1
+fi
+
+for deployment_contract in \
+  "function requiredSkillId(value, lambdaFunctionName)" \
+  "process.env.AWS_LAMBDA_FUNCTION_NAME" \
+  "ALEXA_SKILL_ID must be configured in AWS Lambda" \
+  "exports.requiredSkillId = requiredSkillId"; do
+  if ! grep -Fq "$deployment_contract" "$ROOT_DIR/src/index.js"; then
+    printf '%s\n' "Lambda skill-ID enforcement must keep contract: $deployment_contract" >&2
+    exit 1
+  fi
+done
+
+for deployment_test in \
+  "local module loading permits a missing Alexa skill id" \
+  "Lambda requires a non-empty Alexa skill id" \
+  "Lambda module loading fails before exporting an unguarded handler" \
+  "Lambda module loading accepts a configured trimmed Alexa skill id"; do
+  if ! grep -Fq "$deployment_test" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep deployment configuration case: $deployment_test" >&2
+    exit 1
+  fi
+done
+
+for deployment_document in \
+  "$ROOT_DIR/AGENTS.md" \
+  "$README" \
+  "$SECURITY" \
+  "$ROOT_DIR/VISION.md" \
+  "$CHANGES"; do
+  if ! grep -Fq "AWS Lambda" "$deployment_document" ||
+     ! grep -Fq "ALEXA_SKILL_ID" "$deployment_document"; then
+    printf '%s\n' "$deployment_document must document deployed Alexa skill-ID enforcement." >&2
+    exit 1
+  fi
+done
+
 for speech_contract in \
   "function normalizeSpeechOutput(optionsParam)" \
+  "function hasSsmlSpeakEnvelope(speech)" \
+  "trimmedSpeech.match(/^<speak" \
+  "trimmedSpeech.endsWith('</speak>')" \
+  "return !/<\\/?speak(?:\\s|>)/.test(body)" \
   "Invalid speech output: expected a string or options object" \
   "Invalid speech output: type must be PlainText or SSML" \
-  "Invalid speech output: speech must be a non-empty string"; do
+  "Invalid speech output: speech must be a non-empty string" \
+  "Invalid speech output: SSML must use a speak envelope" \
+  "!hasSsmlSpeakEnvelope(speech)"; do
   if ! grep -Fq "$speech_contract" "$ALEXA_SKILL"; then
     printf '%s\n' "Alexa speech output validation must keep contract: $speech_contract" >&2
     exit 1
@@ -57,6 +694,10 @@ done
 
 for response_test in \
   "response helper accepts explicit PlainText and SSML speech" \
+  "SSML speech accepts a trimmed speak envelope with opening attributes" \
+  "deceptive speak opening prefix" \
+  "deceptive speak closing prefix" \
+  "invalid SSML reprompt fails through the shared envelope validation" \
   "missing reprompt speech fails before returning an Alexa response" \
   "blank reprompt speech fails before returning an Alexa response"; do
   if ! grep -Fq "$response_test" "$ROOT_DIR/test/handler.test.js"; then
@@ -75,6 +716,7 @@ for workflow_contract in \
   "timeout-minutes: 10" \
   "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
   "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e" \
+  "persist-credentials: false" \
   "node-version: [20, 22, 24]" \
   "node-version: \${{ matrix.node-version }}" \
   "workflow_dispatch:" \
@@ -87,13 +729,63 @@ for workflow_contract in \
   fi
 done
 
-if ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE"; then
-  printf '%s\n' "Makefile must resolve repository paths from its own location." >&2
+if grep -Fq "pull_request_target:" "$WORKFLOW"; then
+  printf '%s\n' "GitHub Actions workflow must not use pull_request_target." >&2
   exit 1
 fi
 
-if ! grep -Fq "scripts/check-baseline.sh" "$MAKEFILE"; then
-  printf '%s\n' "Makefile must run scripts/check-baseline.sh from make check." >&2
+for trigger in "pull_request:" "push:"; do
+  if ! grep -Fq "$trigger" "$WORKFLOW"; then
+    printf '%s\n' "GitHub Actions workflow must keep trigger: $trigger" >&2
+    exit 1
+  fi
+done
+
+if grep -Eq '^[[:space:]]+[[:alnum:]_-]+:[[:space:]]*write([[:space:]]|$)' "$WORKFLOW" ||
+  grep -Eq '^[[:space:]]+id-token:' "$WORKFLOW"; then
+  printf '%s\n' "GitHub Actions workflow must not grant write or OIDC permissions." >&2
+  exit 1
+fi
+
+action_uses=$(sed -n \
+  -e 's/^[[:space:]]*uses:[[:space:]]*\([^[:space:]#]*\).*/\1/p' \
+  -e 's/^[[:space:]]*-[[:space:]]*uses:[[:space:]]*\([^[:space:]#]*\).*/\1/p' \
+  "$WORKFLOW")
+expected_action_uses=$(printf '%s\n' \
+  "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
+  "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e")
+if [ "$action_uses" != "$expected_action_uses" ]; then
+  printf '%s\n' "GitHub Actions workflow must use only the reviewed pinned actions." >&2
+  exit 1
+fi
+
+if ! grep -Fq "![Project overview](docs/readme-overview.svg)" "$README"; then
+  printf '%s\n' "README must embed the project overview artwork." >&2
+  exit 1
+fi
+
+for svg_contract in "<svg" "viewBox=" "</svg>"; do
+  if ! grep -Fq "$svg_contract" "$ROOT_DIR/docs/readme-overview.svg"; then
+    printf '%s\n' "README overview must keep SVG contract: $svg_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fxq 'override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$MAKEFILE"; then
+  printf '%s\n' "Makefile must protect repository paths from command-line overrides." >&2
+  exit 1
+fi
+if ! grep -Fxq 'NPM ?= npm' "$MAKEFILE"; then
+  printf '%s\n' "Makefile must preserve the npm command override." >&2
+  exit 1
+fi
+if [ "$(grep -Fc 'cd $(ROOT) && $(NPM)' "$MAKEFILE")" -ne 4 ]; then
+  printf '%s\n' "All four npm commands must execute from the repository root." >&2
+  exit 1
+fi
+make_tab=$(printf '\t')
+if ! grep -Fxq "${make_tab}sh \$(ROOT)scripts/check-baseline.sh" "$MAKEFILE"; then
+  printf '%s\n' "Makefile must run the rooted baseline script from make check." >&2
   exit 1
 fi
 
@@ -123,11 +815,432 @@ if ! grep -Fq "result.error instanceof Error" "$ROOT_DIR/test/handler.test.js"; 
   exit 1
 fi
 
+if [ "$(grep -Fc "console.log('Alexa request failed');" "$ALEXA_SKILL")" -ne 1 ]; then
+  printf '%s\n' "AlexaSkill must keep exactly one generic top-level request failure log." >&2
+  exit 1
+fi
+if [ "$(grep -Fc "throw e;" "$ALEXA_SKILL")" -ne 1 ]; then
+  printf '%s\n' "AlexaSkill must rethrow the caught Error exactly once for promise rejection." >&2
+  exit 1
+fi
+for reflected_exception in \
+  "'Unexpected exception ' + e" \
+  ' + e' \
+  'e.message' \
+  'e.stack' \
+  'String(e)' \
+  'JSON.stringify(e)' \
+  'console.log(e' \
+  'console.error(e' \
+  '${e}'; do
+  if grep -Fq "$reflected_exception" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill logs must not include exception-derived text: $reflected_exception" >&2
+    exit 1
+  fi
+done
+for exception_test_contract in \
+  "handler exceptions retain failure details without reflecting them into logs" \
+  "assert.equal(result.error, sensitiveError);" \
+  "assert.doesNotMatch(logText, /private handler detail/);" \
+  "assert.doesNotMatch(logText, /forged-exception-log/);"; do
+  if ! grep -Fq "$exception_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep exception log-redaction contract: $exception_test_contract" >&2
+    exit 1
+  fi
+done
+
+for exception_doc_contract in \
+  "$README|Top-level handler failures use a generic log message" \
+  "$SECURITY|Top-level Alexa execution logs must remain generic" \
+  "$CHANGES|exception-derived top-level Alexa logs with a stable generic failure"; do
+  exception_doc=${exception_doc_contract%%|*}
+  exception_contract=${exception_doc_contract#*|}
+  if ! grep -Fq "$exception_contract" "$exception_doc"; then
+    printf '%s\n' "$exception_doc must keep exception log-redaction guidance: $exception_contract" >&2
+    exit 1
+  fi
+done
+
 for reflected_failure in \
   "Unsupported intent =" \
   "Unsupported request type ="; do
   if grep -Fq "$reflected_failure" "$ALEXA_SKILL"; then
     printf '%s\n' "Alexa dispatch must not reflect caller input via: $reflected_failure" >&2
+    exit 1
+  fi
+done
+
+for session_new_contract in \
+  "hasOwn(event.session, 'new')" \
+  "typeof event.session.new !== 'boolean'" \
+  "Invalid Alexa event: missing session.new" \
+  "Invalid Alexa event: session.new must be a boolean"; do
+  if ! grep -Fq "$session_new_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep session.new contract: $session_new_contract" >&2
+    exit 1
+  fi
+done
+
+session_new_line=$(grep -nF "hasOwn(event.session, 'new')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+request_type_line=$(grep -nF "hasOwn(event.request, 'type')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+authorization_line=$(grep -nF "event.session.application.applicationId !== this._appId" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$session_new_line" ] || [ -z "$request_type_line" ] || [ -z "$authorization_line" ] ||
+   [ "$session_new_line" -ge "$request_type_line" ] ||
+   [ "$session_new_line" -ge "$authorization_line" ]; then
+  printf '%s\n' "AlexaSkill must validate session.new before request dispatch and application ID authorization." >&2
+  exit 1
+fi
+
+for session_new_test_contract in \
+  "Alexa sessions require their own new-session flag" \
+  "Alexa session new flags must be booleans" \
+  "false session new flags skip session-start lifecycle only" \
+  "session new shape is validated before request and application authorization"; do
+  if ! grep -Fq "$session_new_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep session.new contract: $session_new_test_contract" >&2
+    exit 1
+  fi
+done
+
+for session_new_doc_contract in \
+  "$README|own boolean \`session.new\`" \
+  "$SECURITY|own boolean \`session.new\`" \
+  "$ROOT_DIR/VISION.md|Require each Alexa session to own a boolean new-session flag" \
+  "$CHANGES|own boolean \`session.new\`"; do
+  session_new_doc=${session_new_doc_contract%%|*}
+  session_new_contract=${session_new_doc_contract#*|}
+  if ! grep -Fq "$session_new_contract" "$session_new_doc"; then
+    printf '%s\n' "$session_new_doc must document session.new validation." >&2
+    exit 1
+  fi
+done
+
+for request_id_contract in \
+  "hasOwn(event.request, 'requestId')" \
+  "isNonEmptyString(event.request.requestId)" \
+  "Invalid Alexa event: missing request.requestId" \
+  "Invalid Alexa event: request.requestId must be a non-empty string"; do
+  if ! grep -Fq "$request_id_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep request ID contract: $request_id_contract" >&2
+    exit 1
+  fi
+done
+
+request_id_line=$(grep -nF "hasOwn(event.request, 'requestId')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+timestamp_line=$(grep -nF "hasOwn(event.request, 'timestamp')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+authorization_line=$(grep -nF "event.session.application.applicationId !== this._appId" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$request_id_line" ] || [ -z "$timestamp_line" ] || [ -z "$authorization_line" ] ||
+   [ "$request_id_line" -ge "$timestamp_line" ] ||
+   [ "$request_id_line" -ge "$authorization_line" ]; then
+  printf '%s\n' "AlexaSkill must validate request ID shape before timestamp freshness and application ID authorization." >&2
+  exit 1
+fi
+
+for request_id_test_contract in \
+  "Alexa requests require their own request ID" \
+  "Alexa request IDs must be non-empty strings" \
+  "inherited Alexa request IDs are rejected" \
+  "request ID failures do not reflect caller input into logs or failures" \
+  "request ID shape is validated before timestamp and application id authorization"; do
+  if ! grep -Fq "$request_id_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep request ID contract: $request_id_test_contract" >&2
+    exit 1
+  fi
+done
+
+for request_id_doc_contract in \
+  "$README|own non-empty string \`requestId\`" \
+  "$SECURITY|own non-empty string \`request.requestId\`" \
+  "$ROOT_DIR/VISION.md|Require each Alexa request to own a non-empty string request ID" \
+  "$CHANGES|own non-empty string \`requestId\`"; do
+  request_id_doc=${request_id_doc_contract%%|*}
+  request_id_contract=${request_id_doc_contract#*|}
+  if ! grep -Fq "$request_id_contract" "$request_id_doc"; then
+    printf '%s\n' "$request_id_doc must document request ID validation." >&2
+    exit 1
+  fi
+done
+
+for timestamp_contract in \
+  "var REQUEST_TIMESTAMP_TOLERANCE_MS = 150 * 1000;" \
+  "var ISO_8601_UTC_PATTERN =" \
+  "Math.abs(nowMilliseconds - requestTimestamp)" \
+  "validateEvent(event, this._now());"; do
+  if ! grep -Fq "$timestamp_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep request timestamp contract: $timestamp_contract" >&2
+    exit 1
+  fi
+done
+
+if ! awk '
+  /Math\.abs\(nowMilliseconds - requestTimestamp\) >$/ {
+    getline
+    if ($0 ~ /^[[:space:]]+REQUEST_TIMESTAMP_TOLERANCE_MS$/) {
+      found = 1
+    }
+  }
+  END { exit(found ? 0 : 1) }
+' "$ALEXA_SKILL"; then
+  printf '%s\n' "AlexaSkill must keep an inclusive timestamp freshness boundary." >&2
+  exit 1
+fi
+
+for timestamp_test_contract in \
+  "Alexa requests require a timestamp" \
+  "Alexa request timestamps must be valid ISO 8601 UTC values" \
+  "Alexa request timestamps accept fractional-second precision" \
+  "Alexa request timestamps accept both 150-second freshness boundaries" \
+  "Alexa request timestamps reject stale and excessive future values" \
+  "timestamp failures do not reflect caller input into logs or failures" \
+  "timestamp freshness is validated before application id authorization"; do
+  if ! grep -Fq "$timestamp_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep request timestamp contract: $timestamp_test_contract" >&2
+    exit 1
+  fi
+done
+
+for timestamp_doc_contract in \
+  "$README|150-second freshness window" \
+  "$SECURITY|150-second freshness window" \
+  "$ROOT_DIR/VISION.md|150-second request timestamp freshness window" \
+  "$CHANGES|150-second freshness window"; do
+  timestamp_doc=${timestamp_doc_contract%%|*}
+  timestamp_contract=${timestamp_doc_contract#*|}
+  if ! grep -Fq "$timestamp_contract" "$timestamp_doc"; then
+    printf '%s\n' "$timestamp_doc must document request timestamp freshness." >&2
+    exit 1
+  fi
+done
+
+for locale_contract in \
+  "hasOwn(event.request, 'locale')" \
+  "isNonEmptyString(event.request.locale)" \
+  "Invalid Alexa event: missing request.locale" \
+  "Invalid Alexa event: request.locale must be a non-empty string"; do
+  if ! grep -Fq "$locale_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must keep request locale validation: $locale_contract" >&2
+    exit 1
+  fi
+done
+
+timestamp_freshness_line=$(grep -nF "Math.abs(nowMilliseconds - requestTimestamp)" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+locale_ownership_line=$(grep -nF "hasOwn(event.request, 'locale')" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$timestamp_freshness_line" ] || [ -z "$locale_ownership_line" ] || \
+   [ -z "$authorization_line" ] || \
+   [ "$timestamp_freshness_line" -ge "$locale_ownership_line" ] || \
+   [ "$locale_ownership_line" -ge "$authorization_line" ]; then
+  printf '%s\n' "AlexaSkill must validate request locale after timestamp freshness and before application authorization." >&2
+  exit 1
+fi
+
+for locale_test_contract in \
+  "locale: Object.hasOwn(options, 'locale') ? options.locale : 'en-US'" \
+  "Alexa requests require their own locale" \
+  "Object.create({ locale: 'en-US' })" \
+  "Alexa request locales must be non-empty strings" \
+  "['', '   ', 1, null, {}, []]" \
+  "Alexa request locales accept future non-empty string values" \
+  "futureRequestProperty: { ignored: true }" \
+  "locale shape is validated before lifecycle and application authorization"; do
+  if ! grep -Fq "$locale_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep request locale coverage: $locale_test_contract" >&2
+    exit 1
+  fi
+done
+
+locale_guidance='Every Alexa request must own a non-empty string `request.locale` before lifecycle behavior, authorization, or dispatch.'
+for locale_guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$locale_guidance" "$ROOT_DIR/$locale_guidance_path"; then
+    printf '%s\n' "$locale_guidance_path must document request locale validation." >&2
+    exit 1
+  fi
+done
+
+for locale_plan_contract in \
+  "status: completed" \
+  "81 tests" \
+  "make check" \
+  "hostile mutations" \
+  "No live Lambda or Alexa invocation was performed"; do
+  if ! grep -Fqi "$locale_plan_contract" \
+    "$DOCS_PLANS/2026-06-15-alexa-request-locale-validation.md"; then
+    printf '%s\n' "Request-locale plan must keep completion evidence: $locale_plan_contract" >&2
+    exit 1
+  fi
+done
+
+unsupported_handler_line=$(grep -nF "var requestHandler = hasOwn(this.requestHandlers, event.request.type)" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+callable_handler_line=$(grep -nF "typeof requestHandler !== 'function'" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+session_start_line=$(grep -nF "await sessionStartedHandler.call(this, event.request, event.session);" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$unsupported_handler_line" ] || [ -z "$callable_handler_line" ] || \
+   [ -z "$session_start_line" ] || \
+   [ "$unsupported_handler_line" -ge "$callable_handler_line" ] || \
+   [ "$callable_handler_line" -ge "$session_start_line" ]; then
+  printf '%s\n' "AlexaSkill must reject unsupported request types before session-start lifecycle hooks." >&2
+  exit 1
+fi
+
+for unsupported_lifecycle_test_contract in \
+  "unsupported request types fail with a clear message" \
+  "{ captureLogs: true }" \
+  "const unsupportedRequestLogs = result.logs.join('\\n');" \
+  "assert.doesNotMatch(unsupportedRequestLogs, /onSessionStarted/);"; do
+  if ! grep -Fq "$unsupported_lifecycle_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep unsupported-request lifecycle coverage: $unsupported_lifecycle_test_contract" >&2
+    exit 1
+  fi
+done
+
+for callable_handler_test_contract in \
+  "non-callable request handlers fail before session lifecycle hooks" \
+  "malformed request handler tables fail before session lifecycle hooks" \
+  "LaunchRequest: {}" \
+  "skill.requestHandlers = null;" \
+  "assertFailure(result, 'Unsupported request type');" \
+  "assert.equal(sessionStarts, 0);"; do
+  if ! grep -Fq "$callable_handler_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep callable request-handler coverage: $callable_handler_test_contract" >&2
+    exit 1
+  fi
+done
+
+callable_handler_guidance='Resolved Alexa request handlers must be callable before session-start lifecycle hooks.'
+for callable_handler_guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$callable_handler_guidance" "$ROOT_DIR/$callable_handler_guidance_path"; then
+    printf '%s\n' "$callable_handler_guidance_path must document request-handler callability." >&2
+    exit 1
+  fi
+done
+
+for callable_handler_plan_contract in \
+  'Status: Completed' \
+  'non-callable request handlers fail before session lifecycle hooks' \
+  'repository-root and external-directory `make check`' \
+  'hostile mutations' \
+  'No live Lambda deployment'; do
+  if ! grep -Fq "$callable_handler_plan_contract" \
+    "$DOCS_PLANS/2026-06-16-alexa-callable-request-handler.md"; then
+    printf '%s\n' "Callable request-handler plan must keep completion evidence: $callable_handler_plan_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq "typeof intentHandler === 'function'" "$ALEXA_SKILL"; then
+  printf '%s\n' "AlexaSkill must require callable intent handlers before dispatch." >&2
+  exit 1
+fi
+
+for callable_intent_test_contract in \
+  "non-callable intent handlers fail with the stable unsupported error" \
+  "malformed intent handler tables fail with the stable unsupported error" \
+  "BrokenIntent: { call: () => handlerCalls++ }" \
+  "skill.intentHandlers = null;" \
+  "assertFailure(result, 'Unsupported intent');" \
+  "assert.equal(handlerCalls, 0);"; do
+  if ! grep -Fq "$callable_intent_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep callable intent-handler coverage: $callable_intent_test_contract" >&2
+    exit 1
+  fi
+done
+
+callable_intent_guidance='Resolved Alexa intent handlers must be callable before dispatch.'
+for callable_intent_guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$callable_intent_guidance" "$ROOT_DIR/$callable_intent_guidance_path"; then
+    printf '%s\n' "$callable_intent_guidance_path must document intent-handler callability." >&2
+    exit 1
+  fi
+done
+
+for callable_intent_plan_contract in \
+  'Status: Completed' \
+  'Non-callable intent handlers fail with `Unsupported intent`' \
+  'repository and external-directory `make check`' \
+  'hostile mutations' \
+  'No live Lambda or Alexa invocation was performed'; do
+  if ! grep -Fq "$callable_intent_plan_contract" \
+    "$DOCS_PLANS/2026-06-16-alexa-callable-intent-handler.md"; then
+    printf '%s\n' "Callable intent-handler plan must keep completion evidence: $callable_intent_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for callable_event_handler_contract in \
+  "var REQUEST_EVENT_HANDLER_NAMES = {" \
+  "requestHandler === defaultRequestHandler" \
+  "eventHandler = this.eventHandlers && this.eventHandlers[eventHandlerName];" \
+  "typeof eventHandler !== 'function'" \
+  "typeof sessionStartedHandler !== 'function'" \
+  "await sessionStartedHandler.call(this, event.request, event.session);" \
+  "eventHandler"; do
+  if ! grep -Fq "$callable_event_handler_contract" "$ALEXA_SKILL"; then
+    printf '%s\n' "AlexaSkill must require callable lifecycle handlers before dispatch: $callable_event_handler_contract" >&2
+    exit 1
+  fi
+done
+
+event_handler_guard_line=$(grep -nF "typeof eventHandler !== 'function'" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+session_handler_guard_line=$(grep -nF "typeof sessionStartedHandler !== 'function'" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+session_handler_call_line=$(grep -nF "await sessionStartedHandler.call(this, event.request, event.session);" "$ALEXA_SKILL" | head -n 1 | cut -d: -f1)
+if [ -z "$event_handler_guard_line" ] || [ -z "$session_handler_guard_line" ] || \
+   [ -z "$session_handler_call_line" ] || \
+   [ "$event_handler_guard_line" -ge "$session_handler_guard_line" ] || \
+   [ "$session_handler_guard_line" -ge "$session_handler_call_line" ]; then
+  printf '%s\n' "AlexaSkill must validate lifecycle handler callability before session-start dispatch." >&2
+  exit 1
+fi
+
+for callable_event_test_contract in \
+  "non-callable request event handlers fail before session lifecycle hooks" \
+  "onLaunch: {}" \
+  "non-callable session-start handlers fail before request dispatch" \
+  "onSessionStarted: {}" \
+  "assert.equal(sessionStarts, 0);" \
+  "assert.equal(launchCalls, 0);"; do
+  if ! grep -Fq "$callable_event_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep callable event-handler coverage: $callable_event_test_contract" >&2
+    exit 1
+  fi
+done
+
+callable_event_guidance='Resolved Alexa lifecycle event handlers must be callable before lifecycle hooks or request dispatch.'
+for callable_event_guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$callable_event_guidance" "$ROOT_DIR/$callable_event_guidance_path"; then
+    printf '%s\n' "$callable_event_guidance_path must document lifecycle event-handler callability." >&2
+    exit 1
+  fi
+done
+
+for callable_event_plan_contract in \
+  'Status: Completed' \
+  'Non-callable request-specific event handlers fail before session lifecycle hooks' \
+  'repository and external-directory `make check`' \
+  'hostile mutations' \
+  'No live Lambda or Alexa invocation was performed'; do
+  if ! grep -Fq "$callable_event_plan_contract" \
+    "$DOCS_PLANS/2026-06-16-alexa-callable-event-handlers.md"; then
+    printf '%s\n' "Callable event-handler plan must keep completion evidence: $callable_event_plan_contract" >&2
+    exit 1
+  fi
+done
+
+unsupported_lifecycle_guidance='Unsupported request types are rejected before session-start lifecycle hooks.'
+for unsupported_lifecycle_guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$unsupported_lifecycle_guidance" "$ROOT_DIR/$unsupported_lifecycle_guidance_path"; then
+    printf '%s\n' "$unsupported_lifecycle_guidance_path must document unsupported-request lifecycle ordering." >&2
+    exit 1
+  fi
+done
+
+for unsupported_lifecycle_plan_contract in \
+  'status: completed' \
+  'unsupported request types fail with a clear message' \
+  '81 tests' \
+  'make check' \
+  'isolated hostile mutations' \
+  'credential-shaped additions'; do
+  if ! grep -Fqi "$unsupported_lifecycle_plan_contract" \
+    "$DOCS_PLANS/2026-06-15-alexa-unsupported-request-lifecycle.md"; then
+    printf '%s\n' "Unsupported-request lifecycle plan must keep completion evidence: $unsupported_lifecycle_plan_contract" >&2
     exit 1
   fi
 done
@@ -177,7 +1290,7 @@ found_plan=0
 for plan in "$DOCS_PLANS"/*.md; do
   [ -e "$plan" ] || continue
   found_plan=1
-  if ! grep -iq "status" "$plan" || ! grep -iq "completed" "$plan"; then
+  if ! grep -Eiq '^(##[[:space:]]+)?status:[[:space:]]+completed[[:space:]]*$' "$plan"; then
     printf '%s\n' "$plan must record completed status." >&2
     exit 1
   fi
@@ -195,9 +1308,54 @@ fi
 for plan in \
   "$DOCS_PLANS/2026-06-08-alexa-check-wrapper.md" \
   "$DOCS_PLANS/2026-06-09-alexa-dispatch-key-type-validation.md" \
-  "$DOCS_PLANS/2026-06-09-scripted-baseline-check.md"; do
+  "$DOCS_PLANS/2026-06-09-scripted-baseline-check.md" \
+  "$DOCS_PLANS/2026-06-13-alexa-exception-log-redaction.md" \
+  "$DOCS_PLANS/2026-06-13-alexa-lambda-skill-id-required.md" \
+  "$DOCS_PLANS/2026-06-13-alexa-request-id-validation.md" \
+  "$DOCS_PLANS/2026-06-13-alexa-request-timestamp-freshness.md" \
+  "$DOCS_PLANS/2026-06-13-alexa-ssml-speak-envelope.md" \
+  "$DOCS_PLANS/2026-06-14-alexa-session-new-validation.md" \
+  "$DOCS_PLANS/2026-06-14-alexa-session-id-validation.md"; do
   if ! grep -Fq "make check" "$plan"; then
     printf '%s\n' "$plan must document make check verification." >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq "hostile mutations" "$DOCS_PLANS/2026-06-13-alexa-exception-log-redaction.md"; then
+  printf '%s\n' "Alexa exception log-redaction plan must record hostile mutations." >&2
+  exit 1
+fi
+
+if ! grep -Fq "hostile mutations" "$DOCS_PLANS/2026-06-13-alexa-lambda-skill-id-required.md"; then
+  printf '%s\n' "Lambda skill-ID plan must document hostile mutations." >&2
+  exit 1
+fi
+
+if ! grep -Fq "hostile mutations" "$DOCS_PLANS/2026-06-13-alexa-ssml-speak-envelope.md"; then
+  printf '%s\n' "Alexa SSML envelope plan must document hostile mutations." >&2
+  exit 1
+fi
+
+if ! grep -Fq "hostile mutations" "$DOCS_PLANS/2026-06-13-alexa-request-timestamp-freshness.md"; then
+  printf '%s\n' "Alexa timestamp freshness plan must document hostile mutations." >&2
+  exit 1
+fi
+
+if ! grep -Fq "hostile mutations" "$DOCS_PLANS/2026-06-13-alexa-request-id-validation.md"; then
+  printf '%s\n' "Alexa request-ID plan must document hostile mutations." >&2
+  exit 1
+fi
+
+for ssml_doc_contract in \
+  "$README|<speak>\` envelope" \
+  "$SECURITY|SSML envelope" \
+  "$ROOT_DIR/VISION.md|SSML speak envelopes" \
+  "$CHANGES|SSML output"; do
+  ssml_doc=${ssml_doc_contract%%|*}
+  ssml_contract=${ssml_doc_contract#*|}
+  if ! grep -Fq "$ssml_contract" "$ssml_doc"; then
+    printf '%s\n' "$ssml_doc must document SSML speak-envelope validation." >&2
     exit 1
   fi
 done

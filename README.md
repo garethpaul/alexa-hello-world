@@ -81,26 +81,61 @@ Detected npm scripts:
   reflecting caller-controlled dispatch names into Lambda failures or logs.
 - Malformed Alexa `session.attributes` values are reset to an empty object
   before response session attributes are built.
+- Only owned Alexa session attributes are preserved. Missing, inherited, or
+  malformed values are reset to an empty object before responses are built.
+
+Use [`INTEGRATION_VERIFICATION.md`](INTEGRATION_VERIFICATION.md) for the
+exact-commit non-production Lambda and Alexa matrix. It covers configuration,
+trigger restriction, launch and intent flows, invalid requests, CloudWatch log
+redaction, rollback, and explicit unexecuted results.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
 ## Configuration and Secrets
 
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
-- Set `ALEXA_SKILL_ID` in deployed environments that should reject requests
-  from unexpected Alexa skill application IDs. Values are trimmed; blank values
-  are treated as unset.
+- Local examples may omit `ALEXA_SKILL_ID`, but AWS Lambda initialization
+  fails closed when the runtime-provided `AWS_LAMBDA_FUNCTION_NAME` is present
+  and the skill ID is missing or blank. Configured values are trimmed before
+  application-ID comparison.
 - Routine handler logs avoid raw Alexa request IDs, session IDs, and configured
   or incoming application IDs.
-- Alexa `session.application.applicationId` values must be non-empty strings
-  before optional skill-id comparison or request dispatch.
+- Top-level handler failures use a generic log message while preserving the
+  original stack-bearing `Error` as a rejected promise.
+- The promise-returning Lambda handler resolves with the existing Alexa
+  response payload while preserving Lambda context for custom request handlers.
+- The sample registers lifecycle behavior on a subclass-owned lifecycle handler table,
+  leaving reusable `AlexaSkill` prototype defaults unchanged at module load.
+- Alexa events must own an exact `version: "1.0"` protocol field before nested request validation.
+- Alexa events must provide their own application identity chain through a
+  non-empty string `session.application.applicationId` before optional skill-id
+  comparison or request dispatch.
+- Alexa events must provide their own request envelope before request type, ID,
+  timestamp, or handler dispatch is evaluated.
+- Intent requests must own their intent envelope before intent names are trusted.
 - Alexa `request.type` and `intent.name` values must be non-empty strings before
   dispatch, so crafted objects cannot coerce into valid handler names.
+- Every Alexa session must provide its own boolean `session.new` before request
+  validation, authorization, or lifecycle dispatch.
+- Every Alexa session must provide its own non-empty string `sessionId` before
+  lifecycle validation, authorization, or dispatch.
+- Every Alexa request must provide its own non-empty string `requestId` before
+  timestamp validation, authorization, or dispatch.
+- Alexa `request.timestamp` must be a valid ISO 8601 UTC value inside the
+  inclusive 150-second freshness window before authorization or dispatch.
+- Every Alexa request must own a non-empty string `request.locale` before lifecycle behavior, authorization, or dispatch.
+- Unsupported request types are rejected before session-start lifecycle hooks.
+- Resolved Alexa request handlers must be callable before session-start lifecycle hooks.
+- Resolved Alexa intent handlers must be callable before dispatch.
+- Resolved Alexa lifecycle event handlers must be callable before lifecycle hooks or request dispatch.
+- Launch and Intent handlers must resolve to an owned version 1.0 Alexa response envelope before Lambda succeeds.
 - Rejected dispatch names are not included in failure diagnostics or logs,
   preventing embedded control characters from forging log entries.
 - Primary and reprompt speech are validated before response construction.
   Supported output is a non-empty string or a `PlainText`/`SSML` options
-  object; malformed output fails before `context.succeed` receives a payload.
+  object; malformed output rejects before the Lambda handler resolves.
+- Direct `SSML` output and reprompts must retain a trimmed `<speak>` envelope;
+  mislabeled plain text or alternate roots fail before response construction.
 
 ## Security and Privacy Notes
 
@@ -111,6 +146,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Review changes touching infrastructure, proxy, cloud, or deployment configuration; examples from the scan include .circleci/config.yml, docs/plans/2026-06-08-alexa-testability-baseline.md.
 
 ## Maintenance Notes
+
+- See `docs/plans/2026-06-14-alexa-integration-verification-checklist.md` for
+  the cloud integration evidence matrix and runtime non-claims.
 
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
@@ -138,6 +176,15 @@ When the required SDK or runtime is unavailable, use static checks and source re
   repository baseline guard.
 - See `docs/plans/2026-06-12-alexa-speech-output-validation.md` for response
   speech validation and regression coverage.
+- See `docs/plans/2026-06-13-alexa-ssml-speak-envelope.md` for direct-response
+  SSML root-envelope validation.
+- Simple card titles and content must be non-empty strings before response construction.
+  See `docs/plans/2026-06-17-001-fix-alexa-simple-card-validation-plan.md` for
+  the fail-closed response contract.
+- See `docs/plans/2026-06-17-alexa-handler-response-envelope.md` for validation
+  of custom Launch and Intent handler results at the Lambda boundary.
+- See `docs/plans/2026-06-13-alexa-exception-log-redaction.md` for the boundary
+  between generic failure logs and detailed Lambda errors.
 
 ## Contributing
 

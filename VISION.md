@@ -21,12 +21,31 @@ Priority:
 - Preserve local tests with `npm test`
 - Keep `make check` and `scripts/check-baseline.sh` green before changes are
   pushed
-- Support optional `ALEXA_SKILL_ID` validation for safer deployments
-- Treat blank `ALEXA_SKILL_ID` values as unset so misconfigured environments
-  remain diagnosable
+- Permit optional `ALEXA_SKILL_ID` validation for local examples
+- Require a non-empty `ALEXA_SKILL_ID` when AWS Lambda runtime markers are
+  present so deployed authorization fails closed
 - Keep malformed Alexa event failures explicit and locally testable
-- Require Alexa application IDs to be non-empty strings before dispatch
+- Alexa events must own an exact `version: "1.0"` protocol field before nested request validation.
+- Require each event to own application identity fields before authorization
+- Require each event to own request envelope state before validation or dispatch
+- Intent requests must own their intent envelope before intent names are trusted.
+- Require each Alexa session to own a boolean new-session flag before lifecycle
+  behavior or request dispatch
+- Require each Alexa session to own a non-empty string session ID before
+  lifecycle validation, authorization, or dispatch
+- Require each Alexa request to own a non-empty string request ID before
+  timestamp validation, authorization, or dispatch
+- Enforce an inclusive 150-second request timestamp freshness window before
+  authorization or dispatch
+- Every Alexa request must own a non-empty string `request.locale` before lifecycle behavior, authorization, or dispatch.
+- Unsupported request types are rejected before session-start lifecycle hooks.
+- Resolved Alexa request handlers must be callable before session-start lifecycle hooks.
+- Resolved Alexa intent handlers must be callable before dispatch.
+- Resolved Alexa lifecycle event handlers must be callable before lifecycle hooks or request dispatch.
+- Launch and Intent handlers must resolve to an owned version 1.0 Alexa response envelope before Lambda succeeds.
 - Reset malformed Alexa session attributes before building responses
+- Only owned Alexa session attributes are preserved. Missing, inherited, or
+  malformed values are reset to an empty object before responses are built.
 - Dispatch only explicitly declared request handlers
 - Dispatch only explicitly declared intent handlers
 - Require dispatch keys to be non-empty strings before handler lookup
@@ -35,9 +54,18 @@ Priority:
   application identifiers
 - Do not reflect unsupported caller-controlled request or intent names into
   Lambda failures or logs
+- Use a promise-returning Lambda handler and await declared lifecycle work
+  before completing an invocation
+- Register sample behavior through a subclass-owned lifecycle handler table so
+  reusable base lifecycle defaults remain stable
 - Return stack-bearing `Error` objects for validation and dispatch failures
 - Validate primary and reprompt speech before constructing Alexa responses
+- Simple card titles and content must be non-empty strings before response construction.
+- Keep direct-response SSML speak envelopes validated in the shared primary
+  and reprompt normalization path
 - Keep AWS setup steps explicit for first-time users
+- Keep exact-commit Lambda and Alexa integration evidence separate from local
+  tests, with unexecuted cloud scenarios recorded explicitly
 
 Next priorities:
 
@@ -46,6 +74,8 @@ Next priorities:
 - Keep Node.js runtime expectations current
 - Improve packaging guidance without adding unnecessary tooling
 - Make validation failures clear and easy to diagnose
+- Execute the non-production integration matrix with sanitized evidence and a
+  tested Lambda version rollback
 
 Contribution rules:
 
@@ -63,9 +93,9 @@ Canonical security policy and reporting:
 
 - [`SECURITY.md`](SECURITY.md)
 
-The Lambda can optionally reject requests from unexpected Alexa skill
-application IDs. Deployments should set `ALEXA_SKILL_ID` when they are intended
-to serve only one skill.
+The Lambda rejects initialization when `ALEXA_SKILL_ID` is missing or blank,
+then rejects requests carrying an unexpected Alexa skill application ID.
+Local examples outside Lambda may omit the variable.
 
 AWS credentials, Lambda deployment secrets, and skill identifiers that are not
 meant to be public should remain in the AWS console, environment variables, or

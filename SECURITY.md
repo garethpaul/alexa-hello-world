@@ -16,6 +16,9 @@ Do not open a public issue that includes exploit code, secrets, personal data, o
 
 Helpful reports include:
 
+- Only owned Alexa session attributes are preserved. Missing, inherited, or
+  malformed values are reset to an empty object before responses are built.
+
 - the affected file, endpoint, permission, dependency, or workflow
 - a concise impact statement explaining what an attacker could do
 - reproduction steps using test data and accounts you control
@@ -34,9 +37,46 @@ Helpful reports include:
 - Dependency manifests detected: package.json, package-lock.json. Dependency updates should preserve lockfiles when present and avoid introducing packages without a clear maintenance reason.
 - Alexa request dispatch should reject non-string handler keys before lookup so
   crafted objects cannot coerce into supported request or intent names.
+- Every Alexa event must provide its own boolean `session.new` before request
+  validation, authorization, or lifecycle dispatch. Caller-provided values are
+  not reflected into errors or logs.
+- Alexa events must own an exact `version: "1.0"` protocol field before nested request validation.
+- Every Alexa event must provide its own application identity fields through a
+  non-empty string `session.application.applicationId`; inherited container or
+  identifier properties fail before authorization.
+- Every Alexa event must provide its own request envelope before nested request
+  fields or dispatch are trusted.
+- Intent requests must own their intent envelope before intent names are trusted.
+- Every Alexa event must provide its own non-empty string `session.sessionId`
+  before lifecycle validation, authorization, or dispatch. Identifier values
+  are not reflected into logs or errors.
+- Every Alexa event must provide its own non-empty string `request.requestId`
+  before timestamp validation, authorization, or dispatch. This validates the
+  protocol envelope but does not provide replay detection or persistence.
+- Alexa events must carry an ISO 8601 UTC `request.timestamp` inside the
+  inclusive 150-second freshness window. This defense-in-depth check does not
+  replace Alexa signature verification for custom web services or Lambda
+  trigger authorization.
+- Every Alexa request must own a non-empty string `request.locale` before lifecycle behavior, authorization, or dispatch.
+- Unsupported request types are rejected before session-start lifecycle hooks.
+- Resolved Alexa request handlers must be callable before session-start lifecycle hooks.
+- Resolved Alexa intent handlers must be callable before dispatch.
+- Resolved Alexa lifecycle event handlers must be callable before lifecycle hooks or request dispatch.
+- Launch and Intent handlers must resolve to an owned version 1.0 Alexa response envelope before Lambda succeeds.
 - Primary and reprompt speech must be validated before response construction;
   unsupported types and missing, blank, or non-string speech fail before
-  `context.succeed` receives a payload.
+  the promise-returning Lambda handler resolves with a payload.
+- The shared SSML envelope check requires primary output and reprompts to use a
+  trimmed `<speak>` root before caller-provided markup reaches Alexa.
+- Top-level Alexa execution logs must remain generic and must not duplicate an
+  error message or stack into routine logs.
+- The promise-returning Lambda handler rejects caught `Error` objects unchanged.
+- Sample lifecycle registration uses a subclass-owned lifecycle handler table
+  so loading the Lambda entry point cannot replace reusable base handlers.
+- AWS Lambda deployments must configure a non-empty `ALEXA_SKILL_ID`; module
+  initialization fails before exporting an unguarded handler when the
+  runtime-provided function name is present and the authorization identifier is
+  missing or blank.
 
 ## Service and API Notes
 

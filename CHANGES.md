@@ -1,5 +1,84 @@
 # Changes
 
+## 2026-06-19
+
+- Malformed request and intent handler tables now fail through stable
+  unsupported-handler errors instead of raw own-property helper `TypeError`
+  messages.
+- Added null handler-table regressions and mutation-sensitive baseline
+  contracts for request and intent dispatch.
+
+## 2026-06-17
+
+- Launch and Intent handlers must resolve to an owned version 1.0 Alexa response envelope before Lambda succeeds.
+- Added synchronous, asynchronous, inherited-field, future-field, and
+  SessionEnded response-boundary regressions.
+- Simple card titles and content must be non-empty strings before response construction.
+- Added valid tell/ask card coverage plus malformed, partial, and non-string
+  response regressions and mutation-sensitive baseline contracts.
+
+## 2026-06-16
+
+- Resolved Alexa request handlers must be callable before session-start lifecycle hooks.
+- Resolved Alexa intent handlers must be callable before dispatch.
+  Malformed handler maps retain the stable unsupported-intent failure.
+- Resolved Alexa lifecycle event handlers must be callable before lifecycle hooks or request dispatch.
+  This prevents partial lifecycle effects and raw function-call failures from malformed subclass tables.
+
+## 2026-06-15
+
+- Every Alexa request must own a non-empty string `request.locale` before lifecycle behavior, authorization, or dispatch.
+- Unsupported request types are rejected before session-start lifecycle hooks.
+- Alexa events must own an exact `version: "1.0"` protocol field before nested request validation.
+- Intent requests must own their intent envelope before intent names are trusted.
+- Only owned Alexa session attributes are preserved. Missing, inherited, or
+  malformed values are reset to an empty object before responses are built.
+- Registered sample lifecycle behavior through a subclass-owned lifecycle handler table,
+  preventing module load from replacing reusable `AlexaSkill` defaults.
+- Added a load-time regression and mutation-sensitive portable contracts for
+  lifecycle handler ownership and registration ordering.
+
+## 2026-06-14
+
+- Replaced legacy Lambda context completion with a promise-returning Lambda
+  handler that resolves responses, rejects original errors, and awaits declared
+  lifecycle handlers while preserving context for custom request handlers.
+- Required Alexa events to provide their own request envelope before nested
+  request validation or dispatch.
+- Required Alexa events to supply their own application identity container and
+  identifier properties before skill-ID authorization.
+- Required every Alexa session to provide its own boolean `session.new` before
+  request validation, authorization, or lifecycle dispatch.
+- Added missing, inherited, malformed-value, and ordering regressions plus
+  mutation-sensitive baseline contracts.
+- Required every Alexa session to provide its own non-empty string `sessionId`
+  before lifecycle validation, authorization, or dispatch.
+- Added an exact-commit non-production Lambda and Alexa integration matrix for
+  configuration, invocations, rejection paths, redacted logs, and rollback,
+  with every cloud row explicitly unexecuted.
+
+## 2026-06-13
+
+- Replaced exception-derived top-level Alexa logs with a stable generic failure
+  message while preserving the original `Error` for Lambda failure handling.
+- Added regression and portable baseline coverage for handler-provided error
+  messages and newline-forged log content.
+- Required a non-empty `ALEXA_SKILL_ID` when AWS Lambda runtime markers are
+  present while preserving optional configuration for local examples.
+- Added module-load, helper, guidance, and portable fail-closed contracts for
+  deployed skill-ID authorization.
+- Required direct SSML output and reprompts to use a trimmed `<speak>` root
+  before Alexa response construction.
+- Added focused malformed-SSML regressions and mutation-sensitive contracts.
+- Required ISO 8601 UTC Alexa request timestamps inside an inclusive
+  150-second freshness window before authorization or dispatch.
+- Added deterministic boundary, stale/future, malformed-value, ordering, and
+  non-reflection coverage for request timestamp validation.
+- Required every Alexa request to provide its own non-empty string `requestId`
+  before timestamp validation, authorization, or dispatch.
+- Added missing, malformed, inherited, ordering, and non-reflection request-ID
+  regression coverage plus portable baseline contracts.
+
 ## 2026-06-12
 
 - Validated primary and reprompt speech before constructing Alexa responses.
