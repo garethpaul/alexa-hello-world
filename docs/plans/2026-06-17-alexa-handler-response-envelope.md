@@ -111,7 +111,7 @@ guidance, or falsify completion.
   asynchronous Intent results that incorrectly completed successfully.
 - Focused response-envelope coverage passed for invalid shapes, inherited
   fields, future nested fields, and the unchanged SessionEnded lifecycle.
-- All 121 Node tests, ESLint, Prettier, source syntax checks, and shell syntax
+- All 123 Node tests, ESLint, Prettier, source syntax checks, and shell syntax
   checks passed.
 - Repository-root and external-directory `make check` passed the complete
   maintained gate.

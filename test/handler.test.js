@@ -796,6 +796,24 @@ test('non-callable intent handlers fail with the stable unsupported error', asyn
   assert.equal(handlerCalls, 0);
 });
 
+test('malformed intent handler tables fail with the stable unsupported error', async () => {
+  const result = await invoke(
+    {
+      type: 'IntentRequest',
+      intent: { name: 'HelloWorldIntent' }
+    },
+    {
+      handler: function (event) {
+        const skill = new AlexaSkill();
+        skill.intentHandlers = null;
+        return skill.execute(event);
+      }
+    }
+  );
+
+  assertFailure(result, 'Unsupported intent');
+});
+
 test('unsupported request types fail with a clear message', async () => {
   const result = await invoke(
     { type: 'AudioPlayer.PlaybackStarted' },
@@ -817,6 +835,28 @@ test('non-callable request handlers fail before session lifecycle hooks', async 
         skill.requestHandlers = Object.assign({}, skill.requestHandlers, {
           LaunchRequest: {}
         });
+        skill.eventHandlers = Object.assign({}, skill.eventHandlers, {
+          onSessionStarted: function () {
+            sessionStarts += 1;
+          }
+        });
+        return skill.execute(event);
+      }
+    }
+  );
+
+  assertFailure(result, 'Unsupported request type');
+  assert.equal(sessionStarts, 0);
+});
+
+test('malformed request handler tables fail before session lifecycle hooks', async () => {
+  let sessionStarts = 0;
+  const result = await invoke(
+    { type: 'LaunchRequest' },
+    {
+      handler: function (event) {
+        const skill = new AlexaSkill();
+        skill.requestHandlers = null;
         skill.eventHandlers = Object.assign({}, skill.eventHandlers, {
           onSessionStarted: function () {
             sessionStarts += 1;

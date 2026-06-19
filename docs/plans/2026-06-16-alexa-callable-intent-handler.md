@@ -45,6 +45,9 @@ the current support check and is invoked with `.call`, producing a raw
   exposed a raw function-call failure.
 - Non-callable intent handlers fail with `Unsupported intent`, and the focused
   regression proves the malformed handler is never called.
+- Maintenance review added `malformed intent handler tables fail with the
+stable unsupported error`, covering null handler maps without exposing raw
+  own-property helper failures.
 - The repository and external-directory `make check` passed the complete locked
   gate with 83 tests on Node 20.
 - Six hostile mutations were rejected across the handler guard, regression,

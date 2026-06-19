@@ -71,6 +71,9 @@ for path in \
 done
 
 for response_envelope_contract in \
+  "object !== null" \
+  "typeof object === 'object' || typeof object === 'function'" \
+  "Object.prototype.hasOwnProperty.call(object, property)" \
   "function isAlexaResponseEnvelope(value)" \
   "hasOwn(value, 'version')" \
   "value.version === '1.0'" \
@@ -121,7 +124,7 @@ done
 
 for response_envelope_plan_contract in \
   'Status: Completed' \
-  'All 121 Node tests' \
+  'All 123 Node tests' \
   'Repository-root and external-directory `make check`' \
   'hostile mutations' \
   'No live Lambda or Alexa invocation was performed'; do
@@ -1090,7 +1093,9 @@ done
 
 for callable_handler_test_contract in \
   "non-callable request handlers fail before session lifecycle hooks" \
+  "malformed request handler tables fail before session lifecycle hooks" \
   "LaunchRequest: {}" \
+  "skill.requestHandlers = null;" \
   "assertFailure(result, 'Unsupported request type');" \
   "assert.equal(sessionStarts, 0);"; do
   if ! grep -Fq "$callable_handler_test_contract" "$ROOT_DIR/test/handler.test.js"; then
@@ -1127,7 +1132,9 @@ fi
 
 for callable_intent_test_contract in \
   "non-callable intent handlers fail with the stable unsupported error" \
+  "malformed intent handler tables fail with the stable unsupported error" \
   "BrokenIntent: { call: () => handlerCalls++ }" \
+  "skill.intentHandlers = null;" \
   "assertFailure(result, 'Unsupported intent');" \
   "assert.equal(handlerCalls, 0);"; do
   if ! grep -Fq "$callable_intent_test_contract" "$ROOT_DIR/test/handler.test.js"; then

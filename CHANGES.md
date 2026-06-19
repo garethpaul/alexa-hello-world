@@ -1,5 +1,13 @@
 # Changes
 
+## 2026-06-19
+
+- Malformed request and intent handler tables now fail through stable
+  unsupported-handler errors instead of raw own-property helper `TypeError`
+  messages.
+- Added null handler-table regressions and mutation-sensitive baseline
+  contracts for request and intent dispatch.
+
 ## 2026-06-17
 
 - Launch and Intent handlers must resolve to an owned version 1.0 Alexa response envelope before Lambda succeeds.

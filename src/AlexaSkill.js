@@ -14,7 +14,11 @@ function AlexaSkill(appId, now) {
 }
 
 function hasOwn(object, property) {
-  return Object.prototype.hasOwnProperty.call(object, property);
+  return (
+    object !== null &&
+    (typeof object === 'object' || typeof object === 'function') &&
+    Object.prototype.hasOwnProperty.call(object, property)
+  );
 }
 
 function isNonEmptyString(value) {

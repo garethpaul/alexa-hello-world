@@ -66,6 +66,9 @@ an existing fail-closed boundary with a small reviewable change.
   before implementation because the lifecycle hook ran and dispatch raised a
   non-callable `.call` error, then passed with the stable unsupported failure
   and zero lifecycle starts.
+- Maintenance review added `malformed request handler tables fail before
+session lifecycle hooks`, covering null handler maps with the same stable
+  unsupported failure and zero lifecycle starts.
 - The complete suite passed all 82 tests after a lockfile-clean install.
 - Lockfile-installed ESLint, Prettier, syntax build, and
   `npm audit --omit=dev` passed with zero reported vulnerabilities.
