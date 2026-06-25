@@ -131,7 +131,8 @@ function invoke(request, options = {}) {
 function invokeHandlerResult(requestType, resultHandler, options = {}) {
   const skill = new AlexaSkill();
   skill.eventHandlers = Object.assign({}, baseLifecycleHandlers, {
-    onLaunch: resultHandler
+    onLaunch: resultHandler,
+    onSessionEnded: resultHandler
   });
   skill.intentHandlers = {
     ResponseEnvelopeIntent: resultHandler
@@ -725,6 +726,52 @@ test('session ended request completes without a speech response', async () => {
 
   assert.equal(result.type, 'succeed');
   assert.equal(result.response, undefined);
+});
+
+test('asynchronous session ended handlers complete without a payload', async () => {
+  let cleanupCompleted = false;
+  const result = await invokeHandlerResult('SessionEndedRequest', async () => {
+    await Promise.resolve();
+    cleanupCompleted = true;
+  });
+
+  assert.equal(result.type, 'succeed');
+  assert.equal(result.response, undefined);
+  assert.equal(cleanupCompleted, true);
+});
+
+test('session ended handlers reject response payloads', async () => {
+  const invalidResults = [
+    null,
+    false,
+    0,
+    '',
+    {},
+    { version: '1.0', response: {} }
+  ];
+
+  for (const response of invalidResults) {
+    const result = await invokeHandlerResult(
+      'SessionEndedRequest',
+      () => response,
+      { captureLogs: true }
+    );
+
+    assertFailure(result, 'Invalid Alexa SessionEnded response');
+    assert.doesNotMatch(result.logs.join('\n'), /version|response/);
+  }
+});
+
+test('asynchronous session ended handlers reject response payloads', async () => {
+  const result = await invokeHandlerResult(
+    'SessionEndedRequest',
+    async () => ({ private: 'caller-controlled-response' }),
+    { captureLogs: true }
+  );
+
+  assertFailure(result, 'Invalid Alexa SessionEnded response');
+  assert.doesNotMatch(result.error.message, /caller-controlled-response/);
+  assert.doesNotMatch(result.logs.join('\n'), /caller-controlled-response/);
 });
 
 for (const intentName of ['AMAZON.CancelIntent', 'AMAZON.StopIntent']) {

@@ -40,10 +40,11 @@ function isAlexaResponseEnvelope(value) {
 }
 
 function validateHandlerResponse(requestType, value) {
-  if (
-    requestType !== 'SessionEndedRequest' &&
-    !isAlexaResponseEnvelope(value)
-  ) {
+  if (requestType === 'SessionEndedRequest') {
+    if (value !== undefined) {
+      throw new Error('Invalid Alexa SessionEnded response');
+    }
+  } else if (!isAlexaResponseEnvelope(value)) {
     throw new Error('Invalid Alexa response envelope');
   }
 

@@ -66,6 +66,7 @@
   option objects before response construction.
 - Simple card titles and content must be non-empty strings before response construction.
 - Launch and Intent handlers must resolve to an owned version 1.0 Alexa response envelope before Lambda succeeds.
+- SessionEnded handlers must resolve `undefined`; response payloads fail before Lambda succeeds.
 - Register sample lifecycle behavior on a subclass-owned lifecycle handler table
   so loading `src/index.js` cannot mutate reusable `AlexaSkill` defaults.
 - Alexa events must own an exact `version: "1.0"` protocol field before nested request validation.
