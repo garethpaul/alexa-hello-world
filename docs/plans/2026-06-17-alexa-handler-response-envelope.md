@@ -119,3 +119,9 @@ guidance, or falsify completion.
   awaited ordering, the SessionEnded exemption, owned fields, version and shape
   checks, stable errors, tests, guidance, and completed-plan evidence.
 - No live Lambda or Alexa invocation was performed.
+
+## Follow-Up
+
+`docs/plans/2026-06-25-alexa-session-ended-response-contract.md` tightens the
+SessionEnded exemption so only `undefined` completion is accepted; arbitrary
+payloads no longer bypass Lambda result validation.

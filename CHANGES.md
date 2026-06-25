@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-25 07:23:44 PDT
+
+- SessionEnded handlers must resolve `undefined`; response payloads fail before Lambda succeeds.
+- Added synchronous, asynchronous, non-reflection, baseline, and hostile
+  mutation coverage for the no-payload completion boundary.
+
 ## 2026-06-19
 
 - Malformed request and intent handler tables now fail through stable

@@ -61,6 +61,7 @@ for path in \
   "docs/plans/2026-06-16-alexa-callable-event-handlers.md" \
   "docs/plans/2026-06-17-001-fix-alexa-simple-card-validation-plan.md" \
   "docs/plans/2026-06-17-alexa-handler-response-envelope.md" \
+  "docs/plans/2026-06-25-alexa-session-ended-response-contract.md" \
   "docs/plans/2026-06-15-alexa-intent-envelope-ownership.md" \
   "docs/plans/2026-06-15-alexa-request-locale-validation.md" \
   "docs/plans/2026-06-15-alexa-request-version-validation.md" \
@@ -82,7 +83,9 @@ for response_envelope_contract in \
   "typeof value.response === 'object'" \
   "!Array.isArray(value.response)" \
   "function validateHandlerResponse(requestType, value)" \
-  "requestType !== 'SessionEndedRequest'" \
+  "requestType === 'SessionEndedRequest'" \
+  "value !== undefined" \
+  "throw new Error('Invalid Alexa SessionEnded response')" \
   "throw new Error('Invalid Alexa response envelope')" \
   "var handlerResponse = await requestHandler.call(" \
   "return validateHandlerResponse(event.request.type, handlerResponse);"; do
@@ -106,10 +109,35 @@ for response_envelope_test_contract in \
   "handler response envelope requires owned version and response fields" \
   "handler response envelope preserves future nested fields" \
   "session ended request completes without a speech response" \
+  "asynchronous session ended handlers complete without a payload" \
+  "session ended handlers reject response payloads" \
+  "asynchronous session ended handlers reject response payloads" \
+  "assertFailure(result, 'Invalid Alexa SessionEnded response');" \
   "assertFailure(result, 'Invalid Alexa response envelope');" \
   "assert.strictEqual(result.response, response);"; do
   if ! grep -Fq "$response_envelope_test_contract" "$ROOT_DIR/test/handler.test.js"; then
     printf '%s\n' "Handler tests must keep response-envelope case: $response_envelope_test_contract" >&2
+    exit 1
+  fi
+done
+
+session_ended_guidance='SessionEnded handlers must resolve `undefined`; response payloads fail before Lambda succeeds.'
+for session_ended_guidance_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$session_ended_guidance" "$ROOT_DIR/$session_ended_guidance_path"; then
+    printf '%s\n' "$session_ended_guidance_path must document the SessionEnded no-payload contract." >&2
+    exit 1
+  fi
+done
+
+for session_ended_plan_contract in \
+  'Status: Completed' \
+  'All 126 Node tests' \
+  'Repository-root and external-directory `make check`' \
+  'hostile SessionEnded response mutations were rejected' \
+  'No live Lambda or Alexa invocation was performed'; do
+  if ! grep -Fq "$session_ended_plan_contract" \
+    "$DOCS_PLANS/2026-06-25-alexa-session-ended-response-contract.md"; then
+    printf '%s\n' "SessionEnded response plan must keep completion evidence: $session_ended_plan_contract" >&2
     exit 1
   fi
 done
