@@ -77,6 +77,23 @@ Detected npm scripts:
   inherited intent-name rejection, session-ended, unsupported-request, inherited
   request-type rejection, malformed dispatch-key coercion, malformed-event,
   malformed-intent, and configured application-id rejection flows.
+
+### Common Alexa flow coverage
+
+| Flow                                        | Expected local contract                                                                       |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| New-session launch                          | Run session-start lifecycle work first, return the welcome prompt, and keep the session open. |
+| Existing-session launch                     | Skip session-start lifecycle work and still return the welcome prompt.                        |
+| `HelloWorldIntent`                          | Return the Hello World Simple card and end the session.                                       |
+| `AMAZON.HelpIntent`                         | Return the help prompt and reprompt while keeping the session open.                           |
+| `AMAZON.CancelIntent` / `AMAZON.StopIntent` | Return goodbye and end the session.                                                           |
+| `SessionEndedRequest`                       | Complete lifecycle cleanup with no response payload.                                          |
+| Unsupported request or intent               | Reject with a stable generic error without reflecting the dispatch name.                      |
+
+These rows are executable in `test/handler.test.js` and are protected by
+`scripts/check-baseline.sh`. They are local contracts, not evidence that the
+non-production Lambda and Alexa integration matrix has been executed.
+
 - Unsupported request types and intent names fail generically, without
   reflecting caller-controlled dispatch names into Lambda failures or logs.
 - Malformed Alexa `session.attributes` values are reset to an empty object

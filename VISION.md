@@ -70,8 +70,6 @@ Priority:
 
 Next priorities:
 
-- Expand request and response tests for common Alexa launch, lifecycle, and
-  intent flows
 - Keep Node.js runtime expectations current
 - Improve packaging guidance without adding unnecessary tooling
 - Make validation failures clear and easy to diagnose
