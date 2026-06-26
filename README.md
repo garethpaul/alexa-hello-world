@@ -36,7 +36,8 @@ Additional scan context:
 ### Prerequisites
 
 - Git
-- Node.js 20.19 or newer and npm
+- Node.js 22.13 or newer on the 22.x line, or Node.js 24, and npm. Use the
+  latest security patch available for either maintained LTS line.
 
 ### Setup
 
@@ -70,8 +71,12 @@ Detected npm scripts:
   targets, completed plan metadata, README verification notes, and local
   secret/editor ignore hygiene.
 - GitHub Actions installs the locked dependency graph with `npm ci` and runs
-  the same `make check` gate on Node 20, 22, and 24 for pull requests, pushes
+  the same `make check` gate at the declared Node 22.13 and Node 24.0 floors,
+  plus the latest available 22.x and 24.x patches, for pull requests, pushes
   to `master`, and manual maintenance runs.
+- Node 20 reached end-of-life on April 30, 2026, so it is no longer a supported
+  development or CI runtime. Current and end-of-life non-LTS lines are also
+  outside this sample's support contract.
 - CircleCI keeps the equivalent verification job for existing integrations.
 - Handler tests cover launch, hello, help, cancel, stop, unsupported-intent,
   inherited intent-name rejection, session-ended, unsupported-request, inherited

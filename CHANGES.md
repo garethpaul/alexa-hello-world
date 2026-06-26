@@ -1,5 +1,64 @@
 # Changes
 
+## 2026-06-25 23:51 PDT - P2 - Align maintained Node.js LTS support
+
+### Summary
+
+Removed end-of-life Node 20 from the development and CI support contract, then
+made package metadata and hosted verification accurately cover the maintained
+Node 22 and 24 LTS lines.
+
+### Work completed
+
+- Replaced the overbroad `>=20.19` engine declaration with
+  `^22.13.0 || ^24.0.0` in package and lockfile metadata.
+- Changed GitHub Actions from floating Node 20/22/24 majors to the exact 22.13
+  and 24.0 floors plus the latest 22.x and 24.x patches.
+- Moved CircleCI from Node 20.19 to the exact Node 22.13.0 floor.
+- Documented the April 30, 2026 Node 20 end-of-life boundary, maintained-LTS
+  policy, current verification matrix, and official upstream sources.
+- Added fail-closed baseline contracts and advanced the roadmap to packaging
+  guidance.
+
+### Threads
+
+- None; repository contracts and official Node.js release guidance were
+  reviewed directly.
+
+### Files changed
+
+- `package.json` and `package-lock.json` — supported runtime lines.
+- `.github/workflows/check.yml` — floor and latest-patch LTS matrix.
+- `.circleci/config.yml` — supported exact-floor verification image.
+- `README.md` and `VISION.md` — runtime policy and roadmap state.
+- `docs/plans/2026-06-26-node-runtime-support.md` — decision and evidence.
+- `scripts/check-baseline.sh` — durable runtime consistency contracts.
+- `CHANGES.md` — this cycle record.
+
+### Validation
+
+- `make check` on Node 22.13.0, 22.23.1, 24.0.0, and 24.18.0 — passed lint,
+  formatting, all 126 tests, syntax checks, and the scripted baseline.
+- External-directory `make -f /src/Makefile check` on Node 22.13.0 — passed.
+- `cimg/node:22.13.0` non-root checkout with `npm ci` and `make check` — passed.
+- Eleven hostile runtime-contract mutations — all rejected.
+- `git diff --check` — passed.
+
+### Bugs / findings
+
+- P2 maintenance: package metadata admitted unsupported and end-of-life Node
+  lines, while CircleCI still executed Node 20 and GitHub Actions did not test
+  the declared runtime floors.
+
+### Blockers
+
+- No live Lambda or Alexa invocation was performed; runtime maintenance only
+  changes local and hosted verification expectations.
+
+### Next action
+
+- Improve packaging guidance without adding unnecessary tooling.
+
 ## 2026-06-25 23:42 PDT - P2 - Complete common Alexa flow coverage
 
 ### Summary

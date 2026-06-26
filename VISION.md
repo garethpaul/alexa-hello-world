@@ -67,10 +67,11 @@ Priority:
 - Keep AWS setup steps explicit for first-time users
 - Keep exact-commit Lambda and Alexa integration evidence separate from local
   tests, with unexecuted cloud scenarios recorded explicitly
+- Support the maintained Node.js 22 and 24 LTS lines, including their declared
+  minimum versions and latest security patches in CI
 
 Next priorities:
 
-- Keep Node.js runtime expectations current
 - Improve packaging guidance without adding unnecessary tooling
 - Make validation failures clear and easy to diagnose
 - Execute the non-production integration matrix with sanitized evidence and a
