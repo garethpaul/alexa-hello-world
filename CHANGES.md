@@ -1,5 +1,60 @@
 # Changes
 
+## 2026-06-25 23:42 PDT - P2 - Complete common Alexa flow coverage
+
+### Summary
+
+Confirmed that the 126-test suite already covers the public launch, lifecycle,
+intent, rejection, and SessionEnded paths, then made that matrix explicit and
+fail-closed instead of adding duplicate tests.
+
+### Work completed
+
+- Mapped new/existing launch, asynchronous lifecycle ordering, hello, help,
+  cancel, stop, SessionEnded, and unsupported dispatch behavior to executable
+  tests.
+- Added a maintainer-facing README matrix and a completed evidence record.
+- Added baseline contracts for every matrix row and advanced the roadmap to
+  Node.js runtime maintenance.
+
+### Threads
+
+- None; repository tests, plans, and handlers were reviewed directly.
+
+### Files changed
+
+- `README.md` — explicit common-flow coverage matrix and integration boundary.
+- `docs/plans/2026-06-25-common-alexa-flow-coverage.md` — completion evidence.
+- `scripts/check-baseline.sh` — durable test, guide, plan, and roadmap contracts.
+- `VISION.md` — removed the completed stale priority.
+- `CHANGES.md` — this cycle record.
+
+### Validation
+
+- Pre-change `npm test` — all 126 tests passed; the local host reported its
+  unsupported Node 18 runtime, so final quality gates use supported containers.
+- Red `sh scripts/check-baseline.sh` — rejected the missing completion plan.
+- `make check` on Node 20.19.6, 22.13.1, and 24.18.0 — passed lint,
+  formatting, all 126 tests, syntax checks, and the scripted baseline.
+- External-directory `make -f /src/Makefile check` on Node 20.19.6 — passed.
+- Ten hostile coverage mutations — rejected missing matrix rows, README,
+  roadmap, and plan completion evidence.
+- `git diff --check` — passed.
+
+### Bugs / findings
+
+- P2 maintenance: the roadmap described common-flow coverage as missing even
+  though the maintained suite already exercised every listed sample path.
+
+### Blockers
+
+- No live Lambda or Alexa invocation was performed; the existing integration
+  matrix remains explicitly unexecuted.
+
+### Next action
+
+- Review and update Node.js runtime expectations across package metadata and CI.
+
 ## 2026-06-25 07:23:44 PDT
 
 - SessionEnded handlers must resolve `undefined`; response payloads fail before Lambda succeeds.

@@ -62,6 +62,7 @@ for path in \
   "docs/plans/2026-06-17-001-fix-alexa-simple-card-validation-plan.md" \
   "docs/plans/2026-06-17-alexa-handler-response-envelope.md" \
   "docs/plans/2026-06-25-alexa-session-ended-response-contract.md" \
+  "docs/plans/2026-06-25-common-alexa-flow-coverage.md" \
   "docs/plans/2026-06-15-alexa-intent-envelope-ownership.md" \
   "docs/plans/2026-06-15-alexa-request-locale-validation.md" \
   "docs/plans/2026-06-15-alexa-request-version-validation.md" \
@@ -138,6 +139,43 @@ for session_ended_plan_contract in \
   if ! grep -Fq "$session_ended_plan_contract" \
     "$DOCS_PLANS/2026-06-25-alexa-session-ended-response-contract.md"; then
     printf '%s\n' "SessionEnded response plan must keep completion evidence: $session_ended_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for common_flow_test_contract in \
+  "launch request returns welcome prompt and keeps the session open" \
+  "AlexaSkill awaits asynchronous lifecycle handlers before dispatch" \
+  "HelloWorldIntent returns the hello card and ends the session" \
+  "help intent returns help prompt and keeps the session open" \
+  "AMAZON.CancelIntent', 'AMAZON.StopIntent" \
+  "session ended request completes without a speech response" \
+  "false session new flags skip session-start lifecycle only"; do
+  if ! grep -Fq "$common_flow_test_contract" "$ROOT_DIR/test/handler.test.js"; then
+    printf '%s\n' "Handler tests must keep common Alexa flow coverage: $common_flow_test_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq "Common Alexa flow coverage" "$README"; then
+  printf '%s\n' "README must document common Alexa flow coverage." >&2
+  exit 1
+fi
+
+if grep -Fq "Expand request and response tests for common Alexa launch, lifecycle, and" "$ROOT_DIR/VISION.md"; then
+  printf '%s\n' "VISION must not retain the completed common-flow coverage priority." >&2
+  exit 1
+fi
+
+for common_flow_plan_contract in \
+  "Status: Completed" \
+  "126 Node tests" \
+  "common Alexa flow coverage" \
+  "hostile coverage mutations" \
+  "No live Lambda or Alexa invocation was performed"; do
+  if ! grep -Fq "$common_flow_plan_contract" \
+    "$DOCS_PLANS/2026-06-25-common-alexa-flow-coverage.md"; then
+    printf '%s\n' "Common-flow plan must keep completion evidence: $common_flow_plan_contract" >&2
     exit 1
   fi
 done
