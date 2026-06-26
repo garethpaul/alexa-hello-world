@@ -3,10 +3,12 @@ set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 README="$ROOT_DIR/README.md"
+VISION="$ROOT_DIR/VISION.md"
 SECURITY="$ROOT_DIR/SECURITY.md"
 CHANGES="$ROOT_DIR/CHANGES.md"
 MAKEFILE="$ROOT_DIR/Makefile"
 PACKAGE_JSON="$ROOT_DIR/package.json"
+PACKAGE_LOCK="$ROOT_DIR/package-lock.json"
 GITIGNORE="$ROOT_DIR/.gitignore"
 DOCS_PLANS="$ROOT_DIR/docs/plans"
 ALEXA_SKILL="$ROOT_DIR/src/AlexaSkill.js"
@@ -63,6 +65,7 @@ for path in \
   "docs/plans/2026-06-17-alexa-handler-response-envelope.md" \
   "docs/plans/2026-06-25-alexa-session-ended-response-contract.md" \
   "docs/plans/2026-06-25-common-alexa-flow-coverage.md" \
+  "docs/plans/2026-06-26-node-runtime-support.md" \
   "docs/plans/2026-06-15-alexa-intent-envelope-ownership.md" \
   "docs/plans/2026-06-15-alexa-request-locale-validation.md" \
   "docs/plans/2026-06-15-alexa-request-version-validation.md" \
@@ -773,6 +776,7 @@ for response_test in \
 done
 
 WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
+CIRCLECI="$ROOT_DIR/.circleci/config.yml"
 
 for workflow_contract in \
   "permissions:" \
@@ -783,7 +787,7 @@ for workflow_contract in \
   "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
   "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e" \
   "persist-credentials: false" \
-  "node-version: [20, 22, 24]" \
+  "node-version: ['22.13.0', '22.x', '24.0.0', '24.x']" \
   "node-version: \${{ matrix.node-version }}" \
   "workflow_dispatch:" \
   "cache: npm" \
@@ -794,6 +798,16 @@ for workflow_contract in \
     exit 1
   fi
 done
+
+if ! grep -Fq "image: cimg/node:22.13.0" "$CIRCLECI"; then
+  printf '%s\n' "CircleCI must use the declared Node.js 22 minimum runtime." >&2
+  exit 1
+fi
+
+if grep -Fq "image: cimg/node:20" "$CIRCLECI"; then
+  printf '%s\n' "CircleCI must not use the end-of-life Node.js 20 runtime." >&2
+  exit 1
+fi
 
 if grep -Fq "pull_request_target:" "$WORKFLOW"; then
   printf '%s\n' "GitHub Actions workflow must not use pull_request_target." >&2
@@ -1313,7 +1327,7 @@ done
 
 for package_contract in \
   '"type": "commonjs"' \
-  '"node": ">=20.19"' \
+  '"node": "^22.13.0 || ^24.0.0"' \
   '"lint": "eslint ."' \
   '"format:check": "prettier --check ."' \
   '"test": "node --test"' \
@@ -1324,9 +1338,16 @@ for package_contract in \
   fi
 done
 
+if ! grep -Fq '"node": "^22.13.0 || ^24.0.0"' "$PACKAGE_LOCK"; then
+  printf '%s\n' "package-lock.json must mirror the supported Node.js LTS contract." >&2
+  exit 1
+fi
+
 for documented in \
   "ALEXA_SKILL_ID" \
-  "Node.js 20.19" \
+  "Node.js 22.13" \
+  "Node.js 24" \
+  "Node 20 reached end-of-life on April 30, 2026" \
   "npm ci" \
   "GitHub Actions" \
   "make check" \
@@ -1335,6 +1356,35 @@ for documented in \
   "scripts/check-baseline.sh"; do
   if ! grep -Fq "$documented" "$README"; then
     printf '%s\n' "README must document $documented." >&2
+    exit 1
+  fi
+done
+
+for runtime_vision_contract in \
+  "Support the maintained Node.js 22 and 24 LTS lines" \
+  "minimum versions and latest security patches in CI"; do
+  if ! grep -Fq "$runtime_vision_contract" "$VISION"; then
+    printf '%s\n' "VISION must keep Node runtime support contract: $runtime_vision_contract" >&2
+    exit 1
+  fi
+done
+
+if grep -Fq "Keep Node.js runtime expectations current" "$VISION"; then
+  printf '%s\n' "VISION must not keep the completed Node runtime review as a next priority." >&2
+  exit 1
+fi
+
+for runtime_plan_contract in \
+  'Status: Completed' \
+  'Node 20 reached end-of-life on April 30, 2026' \
+  '^22.13.0 || ^24.0.0' \
+  "22.13.0" \
+  "22.x" \
+  "24.0.0" \
+  "24.x"; do
+  if ! grep -Fq "$runtime_plan_contract" \
+    "$DOCS_PLANS/2026-06-26-node-runtime-support.md"; then
+    printf '%s\n' "Node runtime plan must keep decision evidence: $runtime_plan_contract" >&2
     exit 1
   fi
 done
