@@ -662,7 +662,13 @@ const invalidHandlerResults = [
   ['wrong version', () => ({ version: '2.0', response: {} })],
   ['missing response', () => ({ version: '1.0' })],
   ['null response', () => ({ version: '1.0', response: null })],
-  ['array response', () => ({ version: '1.0', response: [] })]
+  ['array response', () => ({ version: '1.0', response: [] })],
+  [
+    'date envelope',
+    () => Object.assign(new Date(), { version: '1.0', response: {} })
+  ],
+  ['date response', () => ({ version: '1.0', response: new Date() })],
+  ['regular expression response', () => ({ version: '1.0', response: /x/ })]
 ];
 
 for (const [name, createResult] of invalidHandlerResults) {
@@ -706,10 +712,10 @@ test('handler response envelope requires owned version and response fields', asy
 test('handler response envelope preserves future nested fields', async () => {
   const response = {
     version: '1.0',
-    response: {
+    response: Object.assign(Object.create(null), {
       directives: [{ type: 'Future.Directive' }],
       futureResponseField: true
-    },
+    }),
     futureEnvelopeField: true
   };
   const result = await invokeHandlerResult('IntentRequest', () => response);

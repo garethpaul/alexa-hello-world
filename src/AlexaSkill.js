@@ -25,17 +25,28 @@ function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+function isJsonRecord(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  var prototype;
+  try {
+    prototype = Object.getPrototypeOf(value);
+  } catch {
+    return false;
+  }
+
+  return prototype === Object.prototype || prototype === null;
+}
+
 function isAlexaResponseEnvelope(value) {
   return (
-    value !== null &&
-    typeof value === 'object' &&
-    !Array.isArray(value) &&
+    isJsonRecord(value) &&
     hasOwn(value, 'version') &&
     value.version === '1.0' &&
     hasOwn(value, 'response') &&
-    value.response !== null &&
-    typeof value.response === 'object' &&
-    !Array.isArray(value.response)
+    isJsonRecord(value.response)
   );
 }
 
