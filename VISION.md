@@ -43,6 +43,7 @@ Priority:
 - Resolved Alexa intent handlers must be callable before dispatch.
 - Resolved Alexa lifecycle event handlers must be callable before lifecycle hooks or request dispatch.
 - Launch and Intent handlers must resolve to an owned version 1.0 Alexa response envelope before Lambda succeeds.
+- Launch and Intent handler envelopes and nested response values must be JSON-record objects before Lambda succeeds.
 - SessionEnded handlers must resolve `undefined`; response payloads fail before Lambda succeeds.
 - Reset malformed Alexa session attributes before building responses
 - Only owned Alexa session attributes are preserved. Missing, inherited, or

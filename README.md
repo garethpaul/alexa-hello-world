@@ -151,6 +151,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Resolved Alexa intent handlers must be callable before dispatch.
 - Resolved Alexa lifecycle event handlers must be callable before lifecycle hooks or request dispatch.
 - Launch and Intent handlers must resolve to an owned version 1.0 Alexa response envelope before Lambda succeeds.
+- Launch and Intent handler envelopes and nested response values must be JSON-record objects before Lambda succeeds.
 - SessionEnded handlers must resolve `undefined`; response payloads fail before Lambda succeeds.
 - Rejected dispatch names are not included in failure diagnostics or logs,
   preventing embedded control characters from forging log entries.

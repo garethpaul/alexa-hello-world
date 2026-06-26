@@ -66,6 +66,7 @@ for path in \
   "docs/plans/2026-06-25-alexa-session-ended-response-contract.md" \
   "docs/plans/2026-06-25-common-alexa-flow-coverage.md" \
   "docs/plans/2026-06-26-node-runtime-support.md" \
+  "docs/plans/2026-06-26-alexa-response-record-validation.md" \
   "docs/plans/2026-06-15-alexa-intent-envelope-ownership.md" \
   "docs/plans/2026-06-15-alexa-request-locale-validation.md" \
   "docs/plans/2026-06-15-alexa-request-version-validation.md" \
@@ -79,13 +80,15 @@ for response_envelope_contract in \
   "object !== null" \
   "typeof object === 'object' || typeof object === 'function'" \
   "Object.prototype.hasOwnProperty.call(object, property)" \
+  "function isJsonRecord(value)" \
+  "prototype = Object.getPrototypeOf(value);" \
+  "prototype === Object.prototype || prototype === null" \
   "function isAlexaResponseEnvelope(value)" \
+  "isJsonRecord(value)" \
   "hasOwn(value, 'version')" \
   "value.version === '1.0'" \
   "hasOwn(value, 'response')" \
-  "value.response !== null" \
-  "typeof value.response === 'object'" \
-  "!Array.isArray(value.response)" \
+  "isJsonRecord(value.response)" \
   "function validateHandlerResponse(requestType, value)" \
   "requestType === 'SessionEndedRequest'" \
   "value !== undefined" \
@@ -112,6 +115,10 @@ for response_envelope_test_contract in \
   'asynchronous Intent handler rejects ${name} result' \
   "handler response envelope requires owned version and response fields" \
   "handler response envelope preserves future nested fields" \
+  "'date envelope'" \
+  "'date response'" \
+  "'regular expression response'" \
+  "Object.assign(Object.create(null)" \
   "session ended request completes without a speech response" \
   "asynchronous session ended handlers complete without a payload" \
   "session ended handlers reject response payloads" \
@@ -121,6 +128,22 @@ for response_envelope_test_contract in \
   "assert.strictEqual(result.response, response);"; do
   if ! grep -Fq "$response_envelope_test_contract" "$ROOT_DIR/test/handler.test.js"; then
     printf '%s\n' "Handler tests must keep response-envelope case: $response_envelope_test_contract" >&2
+    exit 1
+  fi
+done
+
+response_record_guidance='Launch and Intent handler envelopes and nested response values must be JSON-record objects before Lambda succeeds.'
+for response_record_path in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$response_record_guidance" "$ROOT_DIR/$response_record_path"; then
+    printf '%s\n' "$response_record_path must document Alexa response record validation." >&2
+    exit 1
+  fi
+done
+
+RESPONSE_RECORD_PLAN="$ROOT_DIR/docs/plans/2026-06-26-alexa-response-record-validation.md"
+for response_record_contract in 'Status: Completed' 'JSON-record objects' 'hostile mutations'; do
+  if ! grep -Fq "$response_record_contract" "$RESPONSE_RECORD_PLAN"; then
+    printf '%s\n' "Alexa response record plan is missing verification evidence: $response_record_contract" >&2
     exit 1
   fi
 done

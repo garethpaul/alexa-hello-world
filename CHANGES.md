@@ -1,5 +1,70 @@
 # Changes
 
+## 2026-06-26 12:34 PDT - P1 - Reject non-record Alexa responses
+
+### Summary
+
+Rejected `Date`, `RegExp`, and other non-record objects at both levels of
+Launch and Intent handler responses before Lambda can return a malformed Alexa
+payload.
+
+Launch and Intent handler envelopes and nested response values must be JSON-record objects before Lambda succeeds.
+
+### Work completed
+
+- Added red-first synchronous and asynchronous regressions for a `Date`
+  envelope plus `Date` and `RegExp` nested response values.
+- Added one shared JSON-record predicate accepting ordinary and null-prototype
+  objects while rejecting arrays and exotic object prototypes.
+- Preserved future envelope fields and null-prototype future response fields.
+- Extended static contracts, public guidance, and the completed plan.
+
+### Threads
+
+- Started: Alexa response record validation — direct implementation.
+- Continued: continuous open-source maintenance loop.
+- Stopped: none.
+
+### Files changed
+
+- `src/AlexaSkill.js` — JSON-record envelope and response validation.
+- `test/handler.test.js` — six red regressions and future-field compatibility.
+- `scripts/check-baseline.sh` — source, test, documentation, and plan contracts.
+- `AGENTS.md`, `README.md`, `SECURITY.md`, `VISION.md` — response boundary.
+- `docs/plans/2026-06-26-alexa-response-record-validation.md` — completed plan.
+- `CHANGES.md` — this cycle record.
+
+### Validation
+
+- Red focused run — six non-record handler results completed successfully before
+  the fix and now fail with the stable generic response-envelope error.
+- Exact Node 22.13 `make check` — ESLint, Prettier, 132 tests, syntax checks,
+  and baseline contracts passed.
+- Three isolated hostile mutations — broad prototype acceptance, renamed date
+  regression, and removed public guidance all failed closed.
+- `npm audit --audit-level=high` found zero vulnerabilities.
+- `git diff --check` passed.
+- Hosted run `28260635747` passed exact-floor and latest-patch Node 22 and 24.
+- CodeQL run `28260634242` passed Actions and JavaScript/TypeScript analysis;
+  the aggregate CodeQL check also passed.
+- `codex review --base origin/master` was attempted on exact head `fed4873`
+  but OpenAI authentication returned HTTP 401 before analysis; immutable manual
+  diff review found no accepted or actionable findings.
+
+### Bugs / findings
+
+- P1: An exotic object could satisfy the broad response shape but serialize as
+  a string or empty object rather than an Alexa response record.
+
+### Blockers
+
+- None. Tests are local and use no Alexa or AWS credentials.
+
+### Next action
+
+- Run the complete Node gate and hostile mutations, then require exact-head
+  hosted checks and review before merge.
+
 ## 2026-06-25 23:51 PDT - P2 - Align maintained Node.js LTS support
 
 ### Summary
